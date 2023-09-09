@@ -1,4 +1,4 @@
-pragma circom 2.0.8;
+pragma circom 2.1.4;
 
 function TotalShip() {
   return 5;

@@ -15,3 +15,6 @@ circuits/*.r1cs
 circuits/*.vkey.json
 circuits/*.wasm
 circuits/*.zkey
+# public and proof
+circuits/*-public.json
+circuits/*-proof.json

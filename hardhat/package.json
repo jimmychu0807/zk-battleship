@@ -13,8 +13,8 @@
     "node": ">=16"
   },
   "scripts": {
-    "circom:dev": "hardhat circom --deterministic --debug --verbose",
-    "circom:prod": "hardhat circom --verbose",
+    "hardhat:circom:dev": "hardhat circom --deterministic --debug --verbose",
+    "hardhat:circom:prod": "hardhat circom --verbose",
     "test": "hardhat test"
   }
 }

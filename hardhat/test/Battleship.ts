@@ -42,15 +42,29 @@ describe("Battleship", function () {
     const battleship = await Battleship.deploy(locVerifierAddr);
     await battleship.waitForDeployment();
 
-    // generate proof
+    // tx: player 1 creates a game
     const proof1 = await genLocProof(player1Cfg);
     await battleship
       .connect(acct1)
       .createGame(proof1.solidityProof, proof1.signals);
-    let game = await battleship.game(0);
-    expect(game.player1).equal(acct1.address);
-    expect(game.player2).equal(ethers.ZeroAddress);
-    expect(toHex32(game.player1Hash)).equal(proof1.signals[0]);
+
+    // verify
+    const gameID = 0;
+    let gameView = await battleship.game(gameID);
+    expect(gameView.player1).equal(acct1.address);
+    expect(gameView.player2).equal(ethers.ZeroAddress);
+    expect(toHex32(gameView.player1Hash)).equal(proof1.signals[0]);
+
+    // tx: player 2 joins the game
+    const proof2 = await genLocProof(player2Cfg);
+    await battleship
+      .connect(acct2)
+      .joinGame(gameID, proof2.solidityProof, proof2.signals);
+
+    // verify
+    gameView = await battleship.game(gameID);
+    expect(gameView.player2).equal(acct2.address);
+    expect(toHex32(gameView.player2Hash)).equal(proof2.signals[0]);
   });
 });
 

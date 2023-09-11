@@ -14,10 +14,14 @@
     "node": ">=16"
   },
   "scripts": {
-    "hardhat:circom:dev": "hardhat circom --deterministic --debug --verbose",
-    "hardhat:circom:prod": "hardhat circom --verbose",
-    "circuits:compile": "circom circuits/loc.circom --r1cs --wasm --sym -o circuits",
-    "circuits:clean": "rm -rf circuits/*.r1cs circuits/*.vkey.json circuits/*.wasm circuits/*.zkey circuits/*-proof.json circuits/*-public.json circuits/*.sym",
+    "circuits:getptau": "mkdir -p cache && wget https://hermez.s3-eu-west-1.amazonaws.com/powersOfTau28_hez_final_15.ptau -O cache/ptau.ptau",
+    "circuits:compile": "mkdir circuits/loc && circom circuits/loc.circom --r1cs --wasm --sym -o circuits/loc && mv circuits/loc/loc_js/* circuits/loc && rm -rf circuits/loc/loc_js",
+    "circuits:setup": "snarkjs pks circuits/loc/loc.r1cs cache/ptau.ptau circuits/loc/loc.zkey",
+    "circuits:genProve": "snarkjs pkf circuits/loc-input.json circuits/loc/loc.wasm circuits/loc/loc.zkey circuits/loc/proof.json circuits/loc/public.json",
+    "circuits:genVerifier": "snarkjs zkesv circuits/loc/loc.zkey contracts/LocVerifier.sol",
+    "circuits:prep": "pnpm circuits:getptau && pnpm circuits:compile && pnpm circuits:setup",
+    "circuits:clean": "rm -rf circuits/loc",
+    "clean": "pnpm circuits:clean && pnpm hardhat clean",
     "compile": "hardhat compile",
     "test": "hardhat test"
   }

@@ -59,9 +59,9 @@ describe("Battleship", function () {
 const snarkjs = require('snarkjs');
 
 const emptyProof = `0x${'0'.repeat(64)}`;
-const locWC = require('../circuits/loc_js/witness_calculator.js');
-const locWasmPath = `${__dirname}/../circuits/loc.wasm`;
-const locZKeyPath = `${__dirname}/../circuits/loc.zkey`;
+const locWC = require('../circuits/loc/witness_calculator.js');
+const locWasmPath = `${__dirname}/../circuits/loc/loc.wasm`;
+const locZKeyPath = `${__dirname}/../circuits/loc/loc.zkey`;
 const tmpWitnessPath ='/tmp/witness';
 
 async function genLocProof(input: any) {

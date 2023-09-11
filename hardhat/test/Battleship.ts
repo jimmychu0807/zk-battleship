@@ -4,7 +4,7 @@ import {
 } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import * as fs from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 
 const player1Cfg = {
   nonce: 12345,
@@ -33,17 +33,24 @@ describe("Battleship", function () {
     const [acct1, acct2] = await ethers.getSigners();
 
     // -- deploy contract --
-    const LocVerifier = await ethers.getContractFactory("contracts/LocVerifier.sol");
+    const LocVerifier = await ethers.getContractFactory("contracts/LocVerifier.sol:PlonkVerifier");
     const locVerifier = await LocVerifier.deploy();
-    await locVerifier.deployed();
+    await locVerifier.waitForDeployment();
+    const locVerifierAddr = await locVerifier.getAddress();
 
     const Battleship = await ethers.getContractFactory("Battleship");
-    const battleship = await Battleship.deploy(locVerifier.address);
-    await battleship.deployed();
+    const battleship = await Battleship.deploy(locVerifierAddr);
+    await battleship.waitForDeployment();
 
     // generate proof
     const proof1 = await genLocProof(player1Cfg);
-    await battleship.connect(acct1)
+    await battleship
+      .connect(acct1)
+      .createGame(proof1.solidityProof, proof1.signals);
+    let game = await battleship.game(0);
+    expect(game.player1).equal(acct1.address);
+    expect(game.player2).equal(ethers.ZeroAddress);
+    expect(toHex32(game.player1Hash)).equal(proof1.signals[0]);
   });
 });
 
@@ -51,35 +58,42 @@ describe("Battleship", function () {
 // utility functions
 const snarkjs = require('snarkjs');
 
-const emptyProof = '0x0000000000000000000000000000000000000000000000000000000000000000';
+const emptyProof = `0x${'0'.repeat(64)}`;
 const locWC = require('../circuits/loc_js/witness_calculator.js');
-const locWasmPath = '../circuits/loc.wasm';
-const locZKeyPath = '../circuits/loc.zkey';
-const WITNESS_PATH ='/tmp/witness';
+const locWasmPath = `${__dirname}/../circuits/loc.wasm`;
+const locZKeyPath = `${__dirname}/../circuits/loc.zkey`;
+const tmpWitnessPath ='/tmp/witness';
 
 async function genLocProof(input: any) {
-  const buffer = await fs.readFile(locWasmPath);
-  const witnessCalc = await locWC(buffer);
+  const witnessCalc = await locWC(await readFile(locWasmPath));
   const buff = await witnessCalc.calculateWTNSBin(input);
-  await fs.writeFile(WITNESS_PATH, buff);
-  const { proof, publicSignals } = await snarkjs.plonk.prove(locZKeyPath, WITNESS_PATH);
+  await writeFile(tmpWitnessPath, buff);
+  const { proof, publicSignals } = await snarkjs.plonk.prove(locZKeyPath, tmpWitnessPath);
+
   const solidityProof = proofToSolidityInput(proof);
-  return { solidityProof, publicSignals };
+  return { solidityProof, signals: publicSignals.map(toHex32) };
 }
 
-function proofToSolidityInput(proof: any): string {
+function proofToSolidityInput(proof: any): string[] {
   const proofs: string[] = [
-    proof.pi_a[0], proof.pi_a[1],
-    proof.pi_b[0][1], proof.pi_b[0][0],
-    proof.pi_b[1][1], proof.pi_b[1][0],
-    proof.pi_c[0], proof.pi_c[1],
+    proof.A[0], proof.A[1],
+    proof.B[0], proof.B[1],
+    proof.C[0], proof.C[1],
+    proof.Z[0], proof.Z[1],
+    proof.T1[0], proof.T1[1],
+    proof.T2[0], proof.T2[1],
+    proof.T3[0], proof.T3[1],
+    proof.Wxi[0], proof.Wxi[1],
+    proof.Wxiw[0], proof.Wxiw[1],
+    proof.eval_a, proof.eval_b, proof.eval_c,
+    proof.eval_s1, proof.eval_s2, proof.eval_zw,
   ];
-  const flatProofs = proofs.map(p => BigInt(p));
-  return `0x${flatProofs.map(x => toHex32(x )).join('')}`;
+  return proofs.map(toHex32);
 }
 
-function toHex32(num: BigInt): string {
-  let str = num.toString(16);
-  while(str.length < 64) str = `0${str}`;
-  return str;
+// input: `num`: it is either BigInt, or a string of BigInt in decimal
+// output: a string of `0x{0-e}` with a total lenth of 66 chars.
+function toHex32(num: string | BigInt): string {
+  const str = typeof num === 'string' ? BigInt(num).toString(16) : num.toString(16);
+  return `0x${'0'.repeat(64 - str.length)}${str}`;
 }

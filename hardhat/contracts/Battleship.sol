@@ -27,6 +27,14 @@ contract Battleship {
     uint movesSize;
   }
 
+  struct GameView {
+    address player1;
+    address player2;
+    uint256 player1Hash;
+    uint256 player2Hash;
+    Move[] moves;
+  }
+
   uint32 nextGameID;
   mapping(uint32 => Game) games;
 
@@ -40,19 +48,19 @@ contract Battleship {
   }
 
   function requireLocProof(
-    bytes calldata _proof,
-    uint256 _boardHash
+    uint256[24] calldata proof,
+    uint256[1] calldata boardHash
   ) internal view {
-    (uint256[24] memory p) = abi.decode(_proof, (uint256[24]));
+    // (uint256[24] memory p) = abi.decode(proof, (uint256[24]));
     require(
-      locVerifier.verifyProof(p, [_boardHash]),
+      locVerifier.verifyProof(proof, boardHash),
       "Invalid board state (ZK)"
     );
   }
 
   function createGame(
-    bytes calldata proof,
-    uint256 boardHash
+    uint256[24] calldata proof,
+    uint256[1] calldata boardHash
   ) public returns (uint32) {
     requireLocProof(proof, boardHash);
     uint32 currentID = nextGameID;
@@ -60,7 +68,7 @@ contract Battleship {
 
     Game storage g = games[currentID];
     g.player1 = msg.sender;
-    g.player1Hash = boardHash;
+    g.player1Hash = boardHash[0];
     g.movesSize = 0;
 
     return currentID;
@@ -68,18 +76,39 @@ contract Battleship {
 
   function joinGame(
     uint32 gameID,
-    bytes calldata proof,
-    uint256 boardHash
+    uint256[24] calldata proof,
+    uint256[1] calldata boardHash
   ) public {
     require(gameID >= 0, "Invalid Game ID");
     require(gameID < nextGameID, "Invalid Game ID (exceed upper bound)");
 
     Game storage g = games[gameID];
     require(g.player1 != msg.sender, "Should not be the same as player 1");
-    require(g.player2 == address(0), "Game has been joined");
+    require(g.player2 == address(0), "Game is already closed");
     requireLocProof(proof, boardHash);
 
     g.player2 = msg.sender;
-    g.player2Hash = boardHash;
+    g.player2Hash = boardHash[0];
+  }
+
+  function game(uint32 gameID) public view returns(GameView memory) {
+    require(gameID >= 0, "Invalid gameID, less than 0");
+    require(gameID < nextGameID, "Invalid gameID, exceed uppper bound");
+    Game storage g = games[gameID];
+
+    Move[] memory moves = new Move[](g.movesSize);
+    for (uint i = 0; i < g.movesSize; i++) {
+      moves[i] = g.moves[i];
+    }
+
+    GameView memory gameView = GameView({
+      player1: g.player1,
+      player1Hash: g.player1Hash,
+      player2: g.player2,
+      player2Hash: g.player2Hash,
+      moves: moves
+    });
+
+    return gameView;
   }
 }

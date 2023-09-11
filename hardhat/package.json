@@ -16,7 +16,8 @@
   "scripts": {
     "hardhat:circom:dev": "hardhat circom --deterministic --debug --verbose",
     "hardhat:circom:prod": "hardhat circom --verbose",
-    "clean": "rm -rf artifacts circuits/*.r1cs circuits/*.vkey.json circuits/*.wasm circuits/*.zkey",
+    "circuits:compile": "circom circuits/loc.circom --r1cs --wasm --sym -o circuits",
+    "circuits:clean": "rm -rf circuits/*.r1cs circuits/*.vkey.json circuits/*.wasm circuits/*.zkey circuits/*-proof.json circuits/*-public.json circuits/*.sym",
     "compile": "hardhat compile",
     "test": "hardhat test"
   }

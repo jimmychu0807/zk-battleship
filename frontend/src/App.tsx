@@ -1,13 +1,10 @@
-// import { useState } from 'react'
-import { Stage, Container, Text } from '@pixi/react';
-
+import { Stage } from '@pixi/react';
+import BoardGrid from './BoardGrid';
 import './App.css'
 
 function App() {
-  return <Stage options={{ backgroundColor: 0xeef1f5 }}>
-    <Container position={[150, 150]}>
-      <Text text="Battleship" anchor={{ x: 0.5, y: 0.5 }}/>
-    </Container>
+  return <Stage options={{ antialias: true, autoDensity: true, backgroundColor: 0xeef1f5 }}>
+    <BoardGrid />
   </Stage>
 }
 

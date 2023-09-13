@@ -1,8 +1,8 @@
 import { useCallback } from 'react'
 import { Graphics } from '@pixi/react';
 
-const GRID_ROWS = 9;
-const GRID_COLS = 9;
+const GRID_ROWS = 10;
+const GRID_COLS = 10;
 const GRID_SIZE = 50;
 
 export default function BoardGrid() {

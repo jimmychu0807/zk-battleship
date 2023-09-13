@@ -51,7 +51,6 @@ contract Battleship {
     uint256[24] calldata proof,
     uint256[1] calldata boardHash
   ) internal view {
-    // (uint256[24] memory p) = abi.decode(proof, (uint256[24]));
     require(
       locVerifier.verifyProof(proof, boardHash),
       "Invalid board state (ZK)"

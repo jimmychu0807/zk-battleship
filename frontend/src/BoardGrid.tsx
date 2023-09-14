@@ -1,12 +1,11 @@
 import { useCallback } from 'react'
-import { Graphics } from '@pixi/react';
+import { Container, Graphics } from '@pixi/react';
 
-const GRID_ROWS = 10;
-const GRID_COLS = 10;
-const GRID_SIZE = 50;
+import { GRID_ROWS, GRID_COLS, GRID_SIZE } from './consts';
+import ShipSprites from './ShipSprites';
 
-export default function BoardGrid() {
-  const draw = useCallback((g: any) => {
+export default function BoardGrid(props: {x: number, y: number}) {
+  const draw = useCallback((g) => {
     g.clear();
     g.lineStyle(2, 0xAABBCC);
     g.beginFill('navy');
@@ -26,8 +25,12 @@ export default function BoardGrid() {
     }
   }
 
-  return <>
+  const {x, y} = props;
+
+  return <Container position={[x, y]}>
     { grids }
-  </>;
+    <ShipSprites ship="aircraftCarrier" row={0} col={0}/>
+    <ShipSprites ship="warship" row={3} col={5}/>
+  </Container>;
 }
 

@@ -1,8 +1,7 @@
 import { Sprite } from '@pixi/react';
 import * as PIXI from 'pixi.js';
 
-// const ASSET_PATH = path.join(__dirname, "assets");
-const GRID_SIZE = 50;
+import { GRID_SIZE } from './consts';
 
 interface ShipSpritesProps {
   ship: keyof typeof ships,

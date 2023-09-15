@@ -1,38 +1,29 @@
 import { Sprite } from "@pixi/react";
 import * as PIXI from "pixi.js";
 
-import { GRID_SIZE } from "./consts";
+import { GRID_SIZE, SHIPS } from "./consts";
 
 interface ShipSpritesProps {
-  ship: keyof typeof ships;
-  row: number;
-  col: number;
+  ship: keyof typeof SHIPS;
+  row?: number;
+  col?: number;
+  x?: number;
+  y?: number;
+  anchor?: number;
 }
 
-const ships = {
-  aircraftCarrier: {
-    path: import.meta.resolve("./assets/ships/aircraft-carrier2.png"),
-    rowspan: 4,
-    colspan: 2,
-  },
-  warship: {
-    path: import.meta.resolve("./assets/ships/warship2.png"),
-    rowspan: 5,
-    colspan: 1,
-  },
-};
-
 export default function ShipSprites(props: ShipSpritesProps) {
-  const { ship: shipName, row, col } = props;
-  const ship = ships[shipName];
+  const { ship: shipName, row, col, x, y, anchor } = props;
+  const ship = SHIPS[shipName];
 
   return (
     <Sprite
       image={ship.path}
       height={GRID_SIZE * ship.colspan}
       width={GRID_SIZE * ship.rowspan}
-      x={GRID_SIZE * col}
-      y={GRID_SIZE * row}
+      x={col ? GRID_SIZE * col : x || 0}
+      y={row ? GRID_SIZE * row : y || 0}
+      anchor={anchor || 0}
       blendMode={PIXI.BLEND_MODES.OVERLAY}
     />
   );

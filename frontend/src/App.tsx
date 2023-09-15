@@ -15,6 +15,8 @@ function App() {
         autoDensity: true,
         backgroundColor: 0xeef1f5,
       }}
+      width={1200}
+      height={1200}
     >
       <Text text="Your board" x={0} y={y} style={HeadingTextStyle} />
       <BoardGrid x={0} y={(y += 50)} />

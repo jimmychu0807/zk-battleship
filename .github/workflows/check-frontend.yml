@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18.x]
+        node-version: [lts/hydrogen]
 
     steps:
       - uses: actions/checkout@v3
@@ -20,8 +20,9 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
 
-      - run: cd frontend && pnpm install
+      - run: cd frontend && pnpm install --frozen-lockfile
 
       - run: cd frontend && pnpm lint
 

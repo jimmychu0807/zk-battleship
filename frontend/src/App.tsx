@@ -3,7 +3,6 @@ import { Stage, Text } from "@pixi/react";
 import { HeadingTextStyle, GRID_COLS, GRID_SIZE } from "./consts";
 import BoardGrid from "./BoardGrid";
 import ShipPlate from "./ShipPlate";
-import "./App.css";
 
 function App() {
   let y = 0;
@@ -14,9 +13,11 @@ function App() {
         antialias: true,
         autoDensity: true,
         backgroundColor: 0xeef1f5,
+        eventMode: 'static',
+        resizeTo: window,
       }}
-      width={1200}
-      height={1200}
+      width={window.innerWidth}
+      height={window.innerHeight}
     >
       <Text text="Your board" x={0} y={y} style={HeadingTextStyle} />
       <BoardGrid x={0} y={(y += 50)} />

@@ -46,7 +46,7 @@ export default function ShipSprites(props: ShipSpritesProps) {
     }
   };
 
-  const onDragStart = () => {
+  const onDragStart = (ev: PIXI.FederatedEvent) => {
     const sprite = ev.target;
     sprite.alpha = 0.5;
     dragRef.current = sprite;

@@ -13,13 +13,13 @@ const HeadingTextStyle = new PIXI.TextStyle({
 const SHIPS = {
   aircraftCarrier: {
     name: "Aircraft Carrier",
-    path: import.meta.resolve("./assets/ships/aircraft-carrier2.png"),
+    path: await import.meta.resolve!("./assets/ships/aircraft-carrier2.png"),
     rowspan: 4,
     colspan: 2,
   },
   warship: {
     name: "Battleship",
-    path: import.meta.resolve("./assets/ships/warship2.png"),
+    path: await import.meta.resolve!("./assets/ships/warship2.png"),
     rowspan: 5,
     colspan: 1,
   },

@@ -1,11 +1,12 @@
 import { useCallback } from "react";
 import { Container, Graphics } from "@pixi/react";
+import { Graphics as IGraphics } from "pixi.js";
 
 import { GRID_ROWS, GRID_COLS, GRID_SIZE } from "./consts";
 import ShipSprites from "./ShipSprites";
 
 export default function BoardGrid(props: { x: number; y: number }) {
-  const draw = useCallback((g) => {
+  const draw = useCallback((g: IGraphics) => {
     g.clear();
     g.lineStyle(2, 0xaabbcc);
     g.beginFill("navy");

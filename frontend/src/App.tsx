@@ -13,7 +13,7 @@ function App() {
         antialias: true,
         autoDensity: true,
         backgroundColor: 0xeef1f5,
-        eventMode: 'static',
+        eventMode: "static",
         resizeTo: window,
       }}
       width={window.innerWidth}

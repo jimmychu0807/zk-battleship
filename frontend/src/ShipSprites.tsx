@@ -27,40 +27,34 @@ export default function ShipSprites(props: ShipSpritesProps) {
       // get mouse cursor pos
       const currentPt = ev.global;
       // calculate the ship center point
-      currentPt.x -= ship.rowspan * GRID_SIZE / 2;
-      currentPt.y -= ship.colspan * GRID_SIZE / 2;
+      currentPt.x -= (ship.rowspan * GRID_SIZE) / 2;
+      currentPt.y -= (ship.colspan * GRID_SIZE) / 2;
 
       sprite.parent.toLocal(currentPt, null, sprite.position);
     }
-  }
+  };
 
-  const onDragEnd = (ev) => {
+  const onDragEnd = () => {
     if (dragRef.current !== null) {
-
-      console.log("onDragEnd");
-
       const sprite = dragRef.current;
       sprite.alpha = 1;
-
-      app.stage.off('pointermove', onDragMove);
-      app.stage.off('pointerup', onDragEnd);
-      app.stage.off('pointerupoutside', onDragEnd);
-
       dragRef.current = null;
-    }
-  }
 
-  const onDragStart = (ev) => {
+      app.stage.off("pointermove", onDragMove);
+      app.stage.off("pointerup", onDragEnd);
+      app.stage.off("pointerupoutside", onDragEnd);
+    }
+  };
+
+  const onDragStart = () => {
     const sprite = ev.target;
     sprite.alpha = 0.5;
-
-    console.log("onDragStart");
-
     dragRef.current = sprite;
-    app.stage.on('pointermove', onDragMove);
-    app.stage.on('pointerup', onDragEnd);
-    app.stage.on('pointerupoutside', onDragEnd);
-  }
+
+    app.stage.on("pointermove", onDragMove);
+    app.stage.on("pointerup", onDragEnd);
+    app.stage.on("pointerupoutside", onDragEnd);
+  };
 
   return (
     <Sprite
@@ -70,7 +64,7 @@ export default function ShipSprites(props: ShipSpritesProps) {
       x={col ? GRID_SIZE * col : x || 0}
       y={row ? GRID_SIZE * row : y || 0}
       anchor={anchor || 0}
-      eventMode='static'
+      eventMode="static"
       blendMode={PIXI.BLEND_MODES.OVERLAY}
       onpointerdown={onDragStart}
     />

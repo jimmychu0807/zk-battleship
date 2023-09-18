@@ -1,5 +1,4 @@
 import * as PIXI from "pixi.js";
-import { resolve } from "import-meta-resolve";
 
 const GRID_ROWS = 10;
 const GRID_COLS = 10;
@@ -21,13 +20,13 @@ interface Ship {
 const SHIPS: { [index: string]: Ship } = {
   aircraftCarrier: {
     name: "Aircraft Carrier",
-    path: resolve("./assets/ships/aircraft-carrier2.png", import.meta.url),
+    path: "/src/assets/ships/aircraft-carrier2.png",
     rowspan: 4,
     colspan: 2,
   },
   warship: {
     name: "Battleship",
-    path: resolve("./assets/ships/warship2.png", import.meta.url),
+    path: "/src/assets/ships/warship2.png",
     rowspan: 5,
     colspan: 1,
   },

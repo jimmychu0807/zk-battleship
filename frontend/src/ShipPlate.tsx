@@ -1,6 +1,7 @@
 import { Container, Text } from "@pixi/react";
 import ShipSprites from "./ShipSprites";
 import { SHIPS } from "./consts";
+import type { ShipKey, Ship } from "./consts";
 
 export default function ShipPlate(props: { x: number; y: number }) {
   const { x, y } = props;
@@ -11,7 +12,7 @@ export default function ShipPlate(props: { x: number; y: number }) {
 
   return (
     <Container position={[x, y]}>
-      {Object.entries(SHIPS).map(([shipKey, shipVal], idx) => (
+      {Object.entries(SHIPS).map(([shipKey, shipVal]: [ShipKey, Ship], idx) => (
         <Container
           key={`shipPlate-${shipKey}`}
           position={[

@@ -18,27 +18,27 @@ export default function ShipSprites(props: ShipSpritesProps) {
   const ship = SHIPS[shipName];
 
   const app = useApp();
-  const dragRef = useRef(null);
+  const dragRef = useRef<undefined | PIXI.Sprite>(undefined);
 
-  const onDragMove = (ev) => {
-    if (dragRef.current !== null) {
-      const sprite = dragRef.current;
+  const onDragMove = (ev: PIXI.FederatedMouseEvent) => {
+    if (dragRef.current !== undefined) {
+      const sprite = dragRef.current as PIXI.Sprite;
 
       // get mouse cursor pos
-      const currentPt = ev.global;
+      const currentPt = ev.global as PIXI.IPoint;
       // calculate the ship center point
       currentPt.x -= (ship.rowspan * GRID_SIZE) / 2;
       currentPt.y -= (ship.colspan * GRID_SIZE) / 2;
 
-      sprite.parent.toLocal(currentPt, null, sprite.position);
+      sprite.parent.toLocal(currentPt, undefined, sprite.position);
     }
   };
 
   const onDragEnd = () => {
-    if (dragRef.current !== null) {
-      const sprite = dragRef.current;
+    if (dragRef.current !== undefined) {
+      const sprite = dragRef.current as PIXI.Sprite;
       sprite.alpha = 1;
-      dragRef.current = null;
+      dragRef.current = undefined;
 
       app.stage.off("pointermove", onDragMove);
       app.stage.off("pointerup", onDragEnd);
@@ -46,8 +46,8 @@ export default function ShipSprites(props: ShipSpritesProps) {
     }
   };
 
-  const onDragStart = (ev: PIXI.FederatedEvent) => {
-    const sprite = ev.target;
+  const onDragStart = (ev: PIXI.FederatedMouseEvent) => {
+    const sprite = ev.target as PIXI.Sprite;
     sprite.alpha = 0.5;
     dragRef.current = sprite;
 

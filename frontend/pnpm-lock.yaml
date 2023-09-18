@@ -11,6 +11,9 @@ dependencies:
   '@pixi/ui':
     specifier: ^0.9.0
     version: 0.9.0(@pixi/core@7.2.4)(@pixi/display@7.2.4)(@pixi/events@7.2.4)(@pixi/graphics@7.2.4)(@pixi/sprite@7.2.4)(@pixi/text-bitmap@7.2.4)(@pixi/text-html@7.2.4)(@pixi/text@7.2.4)
+  import-meta-resolve:
+    specifier: ^3.0.0
+    version: 3.0.0
   pixi.js:
     specifier: ^7.2.4
     version: 7.2.4(@pixi/utils@7.2.4)
@@ -1773,6 +1776,10 @@ packages:
       parent-module: 1.0.1
       resolve-from: 4.0.0
     dev: true
+
+  /import-meta-resolve@3.0.0:
+    resolution: {integrity: sha512-4IwhLhNNA8yy445rPjD/lWh++7hMDOml2eHtd58eG7h+qK3EryMuuRbsHGPikCoAgIkkDnckKfWSk2iDla/ejg==}
+    dev: false
 
   /imurmurhash@0.1.4:
     resolution: {integrity: sha512-JmXMZ6wuvDmLiHEml9ykzqO6lwFbof0GG4IkcGaENdCRDDmMVnny7s5HsIgHCbaq0w2MyPhDqkhTUgS2LU2PHA==}

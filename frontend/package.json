@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc --noEmit && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0 && prettier . --check",
     "lint:write": "eslint . --ext ts,tsx --fix && prettier . --write",
     "preview": "vite preview"
@@ -13,6 +13,7 @@
   "dependencies": {
     "@pixi/react": "^7.1.1",
     "@pixi/ui": "^0.9.0",
+    "import-meta-resolve": "^3.0.0",
     "pixi.js": "^7.2.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"

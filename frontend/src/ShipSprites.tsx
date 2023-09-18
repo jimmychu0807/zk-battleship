@@ -1,8 +1,9 @@
-import { useRef } from "react";
+import { useRef, useContext } from "react";
 import { Sprite, useApp } from "@pixi/react";
 import * as PIXI from "pixi.js";
 
 import { GRID_SIZE, SHIPS } from "./consts";
+import { AppContext } from "./AppContext";
 
 interface ShipSpritesProps {
   ship: keyof typeof SHIPS;
@@ -19,9 +20,10 @@ export default function ShipSprites(props: ShipSpritesProps) {
 
   const app = useApp();
   const dragRef = useRef<undefined | PIXI.Sprite>(undefined);
+  const appContext = useContext(AppContext);
 
   const onDragMove = (ev: PIXI.FederatedMouseEvent) => {
-    if (dragRef.current !== undefined) {
+    if (dragRef.current && appContext) {
       const sprite = dragRef.current as PIXI.Sprite;
 
       // get mouse cursor pos
@@ -31,6 +33,12 @@ export default function ShipSprites(props: ShipSpritesProps) {
       currentPt.y -= (ship.colspan * GRID_SIZE) / 2;
 
       sprite.parent.toLocal(currentPt, undefined, sprite.position);
+
+      const { appState } = appContext;
+      const { board } = appState;
+      const bounds = board!.getBounds();
+      console.log("sprite pos", sprite.position);
+      console.log("bounds", bounds);
     }
   };
 

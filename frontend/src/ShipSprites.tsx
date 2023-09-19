@@ -41,10 +41,17 @@ export default function ShipSprites(props: ShipSpritesProps) {
 
     const boardBound = board.getLocalBounds();
     const boardPos = board.toGlobal(new PIXI.Point(0, 0));
-    const boardRightBottom = {x: boardPos.x + boardBound.width, y: boardPos.y + boardBound.height};
+    const boardRightBottom = {
+      x: boardPos.x + boardBound.width,
+      y: boardPos.y + boardBound.height,
+    };
 
-    if (cursorPos.x > boardPos.x && cursorPos.x < boardRightBottom.x
-      && cursorPos.y > boardPos.y && cursorPos.y < boardRightBottom.y) {
+    if (
+      cursorPos.x > boardPos.x &&
+      cursorPos.x < boardRightBottom.x &&
+      cursorPos.y > boardPos.y &&
+      cursorPos.y < boardRightBottom.y
+    ) {
       console.log("ship dragged within board region");
     }
   };

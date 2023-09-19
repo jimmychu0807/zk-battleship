@@ -22,7 +22,7 @@ export default function BoardGrid(props: { x: number; y: number }) {
       const { appState, setAppState } = appContext;
       setAppState({ ...appState, board: boardRef.current });
     }
-  }, [boardRef]);
+  }, [boardRef]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const draw = useCallback<DrawType>((g) => {
     g.clear();
@@ -50,11 +50,10 @@ export default function BoardGrid(props: { x: number; y: number }) {
 
   return (
     <Container position={[x, y]} ref={boardRef}>
-      <Container key="board-grid" position={[0,0]}>
+      <Container key="board-grid" position={[0, 0]}>
         {grids}
       </Container>
-      <Container key="board-ships" position={[0,0]}>
-      </Container>
+      <Container key="board-ships" position={[0, 0]}></Container>
     </Container>
   );
 }

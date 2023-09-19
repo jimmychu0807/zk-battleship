@@ -23,14 +23,14 @@ const SHIPS: Record<ShipKey, Ship> = {
   aircraftCarrier: {
     name: "Aircraft Carrier",
     path: "/src/assets/ships/aircraft-carrier2.png",
-    rowspan: 4,
-    colspan: 2,
+    rowspan: 2,
+    colspan: 4,
   },
   warship: {
     name: "Battleship",
     path: "/src/assets/ships/warship2.png",
-    rowspan: 5,
-    colspan: 1,
+    rowspan: 1,
+    colspan: 5,
   },
 };
 

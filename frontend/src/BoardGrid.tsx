@@ -1,12 +1,30 @@
-import { useCallback } from "react";
-import { Container, Graphics } from "@pixi/react";
-import { Graphics as IGraphics } from "pixi.js";
+import {
+  useCallback,
+  useRef,
+  useContext,
+  useEffect,
+  ComponentProps,
+} from "react";
+import { Container, Graphics, PixiRef } from "@pixi/react";
 
 import { GRID_ROWS, GRID_COLS, GRID_SIZE } from "./consts";
-import ShipSprites from "./ShipSprites";
+import { AppContext } from "./AppContext";
+
+type IContainer = PixiRef<typeof Container>;
+type DrawType = NonNullable<ComponentProps<typeof Graphics>["draw"]>;
 
 export default function BoardGrid(props: { x: number; y: number }) {
-  const draw = useCallback((g: IGraphics) => {
+  const boardRef = useRef<IContainer>(null);
+  const appContext = useContext(AppContext);
+
+  useEffect(() => {
+    if (appContext && boardRef.current) {
+      const { appState, setAppState } = appContext;
+      setAppState({ ...appState, board: boardRef.current });
+    }
+  }, [boardRef]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const draw = useCallback<DrawType>((g) => {
     g.clear();
     g.lineStyle(2, 0xaabbcc);
     g.beginFill("navy");
@@ -31,10 +49,11 @@ export default function BoardGrid(props: { x: number; y: number }) {
   const { x, y } = props;
 
   return (
-    <Container position={[x, y]}>
-      {grids}
-      <ShipSprites ship="aircraftCarrier" row={0} col={0} />
-      <ShipSprites ship="warship" row={3} col={5} />
+    <Container position={[x, y]} ref={boardRef}>
+      <Container key="board-grid" position={[0, 0]}>
+        {grids}
+      </Container>
+      <Container key="board-ships" position={[0, 0]}></Container>
     </Container>
   );
 }

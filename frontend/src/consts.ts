@@ -17,7 +17,9 @@ interface Ship {
   colspan: number;
 }
 
-const SHIPS: { [index: string]: Ship } = {
+type ShipKey = "aircraftCarrier" | "warship";
+
+const SHIPS: Record<ShipKey, Ship> = {
   aircraftCarrier: {
     name: "Aircraft Carrier",
     path: "/src/assets/ships/aircraft-carrier2.png",
@@ -31,8 +33,6 @@ const SHIPS: { [index: string]: Ship } = {
     colspan: 1,
   },
 };
-
-type ShipKey = keyof typeof SHIPS;
 
 export { GRID_ROWS, GRID_COLS, GRID_SIZE, HeadingTextStyle, SHIPS };
 export type { Ship, ShipKey };

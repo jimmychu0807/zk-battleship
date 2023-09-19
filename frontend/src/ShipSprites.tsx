@@ -23,35 +23,42 @@ export default function ShipSprites(props: ShipSpritesProps) {
   const appContext = useContext(AppContext);
 
   const onDragMove = (ev: PIXI.FederatedMouseEvent) => {
-    if (dragRef.current && appContext) {
-      const sprite = dragRef.current as PIXI.Sprite;
+    if (!dragRef.current || !appContext) return;
 
-      // get mouse cursor pos
-      const currentPt = ev.global as PIXI.IPoint;
-      // calculate the ship center point
-      currentPt.x -= (ship.rowspan * GRID_SIZE) / 2;
-      currentPt.y -= (ship.colspan * GRID_SIZE) / 2;
+    const sprite = dragRef.current as PIXI.Sprite;
 
-      sprite.parent.toLocal(currentPt, undefined, sprite.position);
+    // get mouse cursor pos
+    const cursorPos = ev.global as PIXI.Point;
+    // calculate the ship center point
+    const shipPos = cursorPos.clone();
+    shipPos.x -= (ship.rowspan * GRID_SIZE) / 2;
+    shipPos.y -= (ship.colspan * GRID_SIZE) / 2;
 
-      const { appState } = appContext;
-      const { board } = appState;
-      const bounds = board!.getBounds();
-      console.log("sprite pos", sprite.position);
-      console.log("bounds", bounds);
+    sprite.parent.toLocal(shipPos, undefined, sprite.position);
+
+    const board = appContext.appState?.board;
+    if (!board) return;
+
+    const boardBound = board.getLocalBounds();
+    const boardPos = board.toGlobal(new PIXI.Point(0, 0));
+    const boardRightBottom = {x: boardPos.x + boardBound.width, y: boardPos.y + boardBound.height};
+
+    if (cursorPos.x > boardPos.x && cursorPos.x < boardRightBottom.x
+      && cursorPos.y > boardPos.y && cursorPos.y < boardRightBottom.y) {
+      console.log("ship dragged within board region");
     }
   };
 
   const onDragEnd = () => {
-    if (dragRef.current !== undefined) {
-      const sprite = dragRef.current as PIXI.Sprite;
-      sprite.alpha = 1;
-      dragRef.current = undefined;
+    if (dragRef.current === undefined) return;
 
-      app.stage.off("pointermove", onDragMove);
-      app.stage.off("pointerup", onDragEnd);
-      app.stage.off("pointerupoutside", onDragEnd);
-    }
+    const sprite = dragRef.current as PIXI.Sprite;
+    sprite.alpha = 1;
+    dragRef.current = undefined;
+
+    app.stage.off("pointermove", onDragMove);
+    app.stage.off("pointerup", onDragEnd);
+    app.stage.off("pointerupoutside", onDragEnd);
   };
 
   const onDragStart = (ev: PIXI.FederatedMouseEvent) => {

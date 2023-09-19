@@ -27,6 +27,4 @@ jobs:
 
       - run: cd frontend && pnpm install --frozen-lockfile
 
-      - run: cd frontend && pnpm lint
-
-      - run: cd frontend && pnpm build
+      - run: cd frontend && pnpm check

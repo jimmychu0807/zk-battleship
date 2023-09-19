@@ -8,7 +8,6 @@ import {
 import { Container, Graphics, PixiRef } from "@pixi/react";
 
 import { GRID_ROWS, GRID_COLS, GRID_SIZE } from "./consts";
-import ShipSprites from "./ShipSprites";
 import { AppContext } from "./AppContext";
 
 type IContainer = PixiRef<typeof Container>;
@@ -51,9 +50,11 @@ export default function BoardGrid(props: { x: number; y: number }) {
 
   return (
     <Container position={[x, y]} ref={boardRef}>
-      {grids}
-      <ShipSprites ship="aircraftCarrier" row={0} col={0} />
-      <ShipSprites ship="warship" row={3} col={5} />
+      <Container key="board-grid" position={[0,0]}>
+        {grids}
+      </Container>
+      <Container key="board-ships" position={[0,0]}>
+      </Container>
     </Container>
   );
 }

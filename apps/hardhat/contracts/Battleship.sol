@@ -33,6 +33,12 @@ contract Battleship {
   // p1 & p2 ship setup configuration
   mapping(address => Ship[]) ships;
 
+  // Event declaration
+  event P2Joined(address indexed sender);
+  event SetupShip(address indexed sender, uint8 shipId);
+  event GameStart();
+  event PlayerMove(address indexed sender, uint8[2] hitXY, GameState gameState);
+
   // game state: gameSetup, player1Move, player2Move, player1Win, player2Win.
   enum GameState {
     P1Joined,
@@ -82,6 +88,8 @@ contract Battleship {
     require(p1 != msg.sender, "Cannot be the same as player 1");
     p2 = msg.sender;
     gameState = GameState.P2Joined;
+
+    emit P2Joined(msg.sender);
   }
 
   function setupShips(
@@ -121,6 +129,8 @@ contract Battleship {
     playerShips[shipId].topLeft = topLeft;
     playerShips[shipId].bottomRight = bottomRight;
     playerShips[shipId].alive = true;
+
+    emit SetupShip(msg.sender, shipId);
   }
 
   function startGame() public P2JoinedState {
@@ -131,6 +141,8 @@ contract Battleship {
     }
 
     gameState = GameState.P1Move;
+
+    emit GameStart();
   }
 
   function playerMove(uint8[2] memory hitXY) public PlayerToMove {
@@ -174,6 +186,8 @@ contract Battleship {
     gameState = gameState == GameState.P1Move
       ? (isGameEnd() ? GameState.P1Win : GameState.P2Move)
       : (isGameEnd() ? GameState.P2Win : GameState.P1Move);
+
+    emit PlayerMove(msg.sender, hitXY, gameState);
   }
 
   function isGameEnd() public view returns (bool) {

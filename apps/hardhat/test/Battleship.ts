@@ -13,7 +13,7 @@ enum GameState {
 
 describe("Battleship", function () {
   async function deployFixture() {
-    // @ts-expect-error
+    // @ts-ignore
     const [p1, p2] = await hre.ethers.getSigners();
     const Battleship = await hre.ethers.getContractFactory("Battleship");
     const battleship = await Battleship.deploy();

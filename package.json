@@ -10,7 +10,7 @@
     "fmt": "prettier -w .",
     "lint": "eslint .",
     "prepare": "husky install",
-    "validate": "prettier -c .",
+    "validate": "pnpm -r validate",
     "test": "pnpm -r test"
   },
   "engines": {
@@ -39,6 +39,6 @@
     "trailingComma": "es5",
     "tabWidth": 2,
     "semi": true,
-    "singleQuote": true
+    "singleQuote": false
   }
 }

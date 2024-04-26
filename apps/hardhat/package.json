@@ -13,6 +13,7 @@
   "scripts": {
     "clean": "hardhat clean",
     "compile": "hardhat --typecheck compile",
-    "test": "hardhat --typecheck test"
+    "test": "hardhat --typecheck test",
+    "validate": "pnpm test && prettier -c ."
   }
 }

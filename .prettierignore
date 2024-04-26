@@ -1,5 +1,6 @@
 **/hardhat/artifacts/*
 **/hardhat/cache/*
+**/hardhat/ignition/deployments
 **/hardhat/typechain-types/*
 *.md
 *.yaml

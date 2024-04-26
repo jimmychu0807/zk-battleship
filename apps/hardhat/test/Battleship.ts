@@ -23,7 +23,7 @@ describe("Battleship", function () {
   describe("Deployment", () => {
     it("Should deploy a contract properly", async () => {
       const { battleship, p1, p2 } = await loadFixture(deployFixture);
-      expect(await battleship.game_state()).equal(GameState.P1Joined);
+      expect(await battleship.gameState()).equal(GameState.P1Joined);
       expect(await battleship.p1()).equal(await p1.getAddress());
     });
   });

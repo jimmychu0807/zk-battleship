@@ -1,0 +1,5 @@
+**/hardhat/artifacts/*
+**/hardhat/cache/*
+**/hardhat/typechain-types/*
+*.md
+*.yaml

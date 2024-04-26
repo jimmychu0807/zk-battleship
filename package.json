@@ -7,10 +7,11 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "fmt": "prettier --write .",
+    "fmt": "prettier -w .",
     "lint": "eslint .",
     "prepare": "husky install",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "validate": "prettier -c .",
+    "test": "pnpm -r test"
   },
   "engines": {
     "node": ">=18"
@@ -33,5 +34,11 @@
       "eslint --fix"
     ],
     "**/*": "prettier --write --ignore-unknown"
+  },
+  "prettier": {
+    "trailingComma": "es5",
+    "tabWidth": 2,
+    "semi": true,
+    "singleQuote": true
   }
 }

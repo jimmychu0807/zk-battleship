@@ -1,113 +1,121 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-interface ILocVerifier {
-  function verifyProof(
-    uint256[24] calldata _proof,
-    uint256[1] calldata _pubSignals
-  ) external view returns (bool);
-}
-
 contract Battleship {
-  // -- on-chain data --
-  ILocVerifier public immutable locVerifier;
+  // constant
+  uint8 public constant TOTAL_SHIPS = 4;
+  uint8[2][4] public SHIP_SIZE = [
+    [1, 2],  // 2
+    [1, 3],  // 3
+    [1, 4],  // 4
+    [1, 5]   // 5, total = 14
+  ];
+  uint8 public constant BOARD_ROWS = 9;
+  uint8 public constant BOARD_COLS = 9;
 
-  struct Move {
-    uint8 x;
-    uint8 y;
-    bool isHit;
+  struct Ship {
+    uint8[][] body;
+    uint8[][] top_left;
+    uint8[][] bottom_right;
+    bool alive;
+  }
+  // p1 and p2 addr, only they can send the missile
+  address public p1;
+  address public p2;
+  // p1 & p2 attack history list
+  mapping(address => uint8[][]) moves;
+  // p1 & p2 ship setup configuration
+  mapping(address => Ship[]) ships;
+
+  // game state: gameSetup, player1Move, player2Move, player1Win, player2Win.
+  enum GameState {
+    P1Joined,
+    P2Joined,
+    P1Move,
+    P2Move,
+    P1Win,
+    P2Win
+  }
+  GameState public game_state;
+
+  modifier AnyPlayer() {
+    require(msg.sender == p1 || msg.sender == p2, "Not one of the game player");
+    _;
   }
 
-  struct Game {
-    address player1;
-    address player2;
-    uint256 player1Hash;
-    uint256 player2Hash;
-    mapping (uint => Move) moves;
-    uint movesSize;
+  modifier P1JoinedState() {
+    require(game_state == GameState.P1Joined, "Game not in P1Joined state");
+    _;
   }
 
-  struct GameView {
-    address player1;
-    address player2;
-    uint256 player1Hash;
-    uint256 player2Hash;
-    Move[] moves;
+  modifier P2JoinedState() {
+    require(game_state == GameState.P2Joined, "Game not in P2Joined state");
+    _;
   }
 
-  uint32 nextGameID;
-  mapping(uint32 => Game) games;
-
-  // -- end: on-chain data --
-
-  // constructor
-  constructor(
-    ILocVerifier _locVerifier
-  ) {
-    locVerifier = _locVerifier;
+  modifier ForP1Move() {
+    require(game_state == GameState.P1Move, "Not for player 1 to move now");
+    require(msg.sender == p1, "Not player 1");
+    _;
   }
 
-  function requireLocProof(
-    uint256[24] calldata proof,
-    uint256[1] calldata boardHash
-  ) internal view {
-    require(
-      locVerifier.verifyProof(proof, boardHash),
-      "Invalid board state (ZK)"
-    );
+  modifier ForP2Move() {
+    require(game_state == GameState.P2Move, "Not for player 2 to move now");
+    require(msg.sender == p2, "Not player 2");
+    _;
   }
 
-  function createGame(
-    uint256[24] calldata proof,
-    uint256[1] calldata boardHash
-  ) public returns (uint32) {
-    requireLocProof(proof, boardHash);
-    uint32 currentID = nextGameID;
-    nextGameID += 1;
-
-    Game storage g = games[currentID];
-    g.player1 = msg.sender;
-    g.player1Hash = boardHash[0];
-    g.movesSize = 0;
-
-    return currentID;
+  constructor() {
+    p1 = msg.sender;
+    game_state = GameState.P1Joined;
   }
 
-  function joinGame(
-    uint32 gameID,
-    uint256[24] calldata proof,
-    uint256[1] calldata boardHash
-  ) public {
-    require(gameID >= 0, "Invalid Game ID");
-    require(gameID < nextGameID, "Invalid Game ID (exceed upper bound)");
-
-    Game storage g = games[gameID];
-    require(g.player1 != msg.sender, "Should not be the same as player 1");
-    require(g.player2 == address(0), "Game is already closed");
-    requireLocProof(proof, boardHash);
-
-    g.player2 = msg.sender;
-    g.player2Hash = boardHash[0];
+  function p2join() public P1JoinedState {
+    require(p1 != msg.sender, "Cannot be the same as player 1");
+    p2 = msg.sender;
+    game_state = GameState.P2Joined;
   }
 
-  function game(uint32 gameID) public view returns(GameView memory) {
-    require(gameID >= 0, "Invalid gameID, less than 0");
-    require(gameID < nextGameID, "Invalid gameID, exceed uppper bound");
-    Game storage g = games[gameID];
+  function setupShips() public P2JoinedState AnyPlayer {
 
-    Move[] memory moves = new Move[](g.movesSize);
-    for (uint i = 0; i < g.movesSize; i++) {
-      moves[i] = g.moves[i];
+  }
+
+  function startGame() public P2JoinedState {
+    // check that p1ships config and p2ships config are properly configured
+
+    game_state = GameState.P1Move;
+  }
+
+  function playerMove(uint8[2] memory hitXY) public AnyPlayer {
+    require(game_state == GameState.P1Move || game_state == GameState.P2Move, "Game is not in a moving state");
+    if (game_state == GameState.P1Move) {
+      require(p1 == msg.sender, "Not recognized as player 1");
+    } else {
+      require(p2 == msg.sender, "Not recognized as player 2");
     }
 
-    GameView memory gameView = GameView({
-      player1: g.player1,
-      player1Hash: g.player1Hash,
-      player2: g.player2,
-      player2Hash: g.player2Hash,
-      moves: moves
-    });
+    // Logic of adding the move in the corresponding move list
 
-    return gameView;
+
+    // Update the game state
+    if (game_state == GameState.P1Move) {
+      if (isGameEnd()) {
+        game_state = GameState.P1Win;
+      } else {
+        game_state = GameState.P2Move;
+      }
+    } else {
+      // game_state == GameState.P2Move
+      if (isGameEnd()) {
+        game_state = GameState.P2Win;
+      } else {
+        game_state = GameState.P1Move;
+      }
+    }
+  }
+
+  function isGameEnd() public view returns (bool) {
+    // check if the game ends
+    return true;
   }
 }

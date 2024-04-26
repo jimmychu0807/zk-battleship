@@ -17,3 +17,6 @@ circuits/*.wasm
 circuits/*.zkey
 circuits/*.sym
 circuits/loc
+
+# hardhat ignition deployment
+ignition/deployments

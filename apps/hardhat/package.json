@@ -1,0 +1,18 @@
+{
+  "name": "zk-battleship-hardhat",
+  "version": "0.1.0",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.3",
+    "snarkjs": "^0.7.0"
+  },
+  "engine": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "clean": "hardhat clean",
+    "compile": "hardhat --typecheck compile",
+    "test": "hardhat --typecheck test"
+  }
+}

@@ -100,12 +100,12 @@ contract Battleship {
     require (bottomRight[1] < BOARD_COLS, "ship is placed out of bound (on column)");
 
     uint8[2] storage shipSize = SHIP_SIZES[shipId];
-    uint8 sizeX = bottomRight[0] - topLeft[0] + 1;
-    uint8 sizeY = bottomRight[1] - topLeft[1] + 1;
+    uint8 rowSize = bottomRight[0] - topLeft[0] + 1;
+    uint8 colSize = bottomRight[1] - topLeft[1] + 1;
 
     require (
-      (sizeX == shipSize[0] && sizeY == shipSize[1])
-      || (sizeX == shipSize[1] && sizeY == shipSize[0]),
+      (rowSize == shipSize[0] && colSize == shipSize[1])
+      || (rowSize == shipSize[1] && colSize == shipSize[0]),
       "ship submitted size doesn't match its expected size"
     );
 
@@ -113,8 +113,8 @@ contract Battleship {
     Ship[] storage playerShips = ships[msg.sender];
 
     // Fill the ship body with 0
-    for (uint8 row = 0; row < shipSize[0]; row++) {
-      for (uint8 col = 0; col < shipSize[1]; col++) {
+    for (uint8 row = 0; row < rowSize; row++) {
+      for (uint8 col = 0; col < colSize; col++) {
         playerShips[shipId].body[row][col] = 0;
       }
     }
@@ -155,9 +155,11 @@ contract Battleship {
 
         // mark the ship as dead if its body are all hit
         bool shipAlive = false;
-        uint8[2] memory shipSize = SHIP_SIZES[sIdx];
-        for(uint8 row = 0; row < shipSize[0]; row++) {
-          for (uint8 col = 0; col < shipSize[1]; col++) {
+        uint8 rowSize = ship.bottomRight[0] - ship.topLeft[0] + 1;
+        uint8 colSize = ship.bottomRight[1] - ship.topLeft[1] + 1;
+
+        for(uint8 row = 0; row < rowSize; row++) {
+          for (uint8 col = 0; col < colSize; col++) {
             if (ship.body[row][col] == 0) {
               shipAlive = true;
               break;

@@ -11,6 +11,16 @@ enum GameState {
   P2Won,
 }
 
+const helpers = {
+  async setupPlayerShips(battleship: any, p: any) {
+    const pBattleship = battleship.connect(p);
+    await pBattleship.setupShips(0, [0, 0], [0, 1]);
+    await pBattleship.setupShips(1, [1, 0], [1, 2]);
+    await pBattleship.setupShips(2, [2, 0], [2, 3]);
+    await pBattleship.setupShips(3, [3, 0], [4, 3]);
+  },
+};
+
 describe("Battleship", function () {
   async function deployFixture() {
     // @ts-ignore
@@ -26,11 +36,23 @@ describe("Battleship", function () {
     const Battleship = await hre.ethers.getContractFactory("Battleship");
     const battleship = await Battleship.deploy();
 
-    const p1Addr = await p1.getAddress();
-    const p2Addr = await p2.getAddress();
-
     await battleship.connect(p2).p2join();
     return { battleship, p1, p2, p3 };
+  }
+
+  async function gameStartFixture() {
+    // @ts-ignore
+    const [p1, p2] = await hre.ethers.getSigners();
+    const Battleship = await hre.ethers.getContractFactory("Battleship");
+    const battleship = await Battleship.deploy();
+    const p2Battleship = battleship.connect(p2);
+
+    await p2Battleship.p2join();
+    await helpers.setupPlayerShips(battleship, p1);
+    await helpers.setupPlayerShips(battleship, p2);
+    await p2Battleship.startGame();
+
+    return { battleship, p1, p2 };
   }
 
   describe("Player 1 deploy the contract", () => {
@@ -142,21 +164,24 @@ describe("Battleship", function () {
     it("should allow game to start with both players complete setting up ships", async () => {
       const { battleship, p1, p2 } = await loadFixture(p2JoinedFixture);
 
-      const p1Battleship = battleship.connect(p1);
-      await p1Battleship.setupShips(0, [0, 0], [0, 1]);
-      await p1Battleship.setupShips(1, [1, 0], [1, 2]);
-      await p1Battleship.setupShips(2, [2, 0], [2, 3]);
-      await p1Battleship.setupShips(3, [3, 0], [4, 3]);
-
-      const p2Battleship = battleship.connect(p2);
-      await p2Battleship.setupShips(0, [0, 0], [0, 1]);
-      await p2Battleship.setupShips(1, [1, 0], [1, 2]);
-      await p2Battleship.setupShips(2, [2, 0], [2, 3]);
-      await p2Battleship.setupShips(3, [3, 0], [4, 3]);
-
-      await expect(p1Battleship.startGame()).emit(battleship, "GameStart");
+      await helpers.setupPlayerShips(battleship, p1);
+      await helpers.setupPlayerShips(battleship, p2);
+      await expect(battleship.connect(p1).startGame()).emit(
+        battleship,
+        "GameStart"
+      );
 
       expect(await battleship.gameState()).to.equal(GameState.P1Move);
     });
+  });
+
+  describe("Player moves", () => {
+    it("should reject moves that are out of bound", async () => {
+      const { battleship, p1, p2 } = await loadFixture(gameStartFixture);
+    });
+    it("should accept move that miss");
+    it("should accept move that hit");
+    it("should be able to sink a ship");
+    it("should end a game when all ships are sunk");
   });
 });

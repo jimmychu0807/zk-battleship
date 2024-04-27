@@ -173,22 +173,15 @@ contract Battleship {
         && ship.topLeft[1] <= hitXY[1] && hitXY[1] <= ship.bottomRight[1] // for col check
       ) {
         // hit the ship
-        // ship.body[hitXY[0] - ship.topLeft[0]][hitXY[1] - ship.topLeft[1]] = 1;
+        uint8 shipRows = ship.bottomRight[1] - ship.topLeft[1] + 1;
+        uint8 bodyIdx = (hitXY[0] - ship.topLeft[0]) * shipRows + (hitXY[1] - ship.topLeft[1] + 1);
+        uint8 reverseIdx = (SHIP_SIZES[sIdx][0] * SHIP_SIZES[sIdx][1]) - bodyIdx - 1;
+        uint256 mask = ~(1 << reverseIdx);
+        ship.body &= mask;
 
         // mark the ship as dead if its body are all hit
-        // bool shipAlive = false;
-        // uint8 rowSize = ship.bottomRight[0] - ship.topLeft[0] + 1;
-        // uint8 colSize = ship.bottomRight[1] - ship.topLeft[1] + 1;
-
-        // for(uint8 row = 0; row < rowSize; row++) {
-        //   for (uint8 col = 0; col < colSize; col++) {
-        //     if (ship.body[row][col] == 0) {
-        //       shipAlive = true;
-        //       break;
-        //     }
-        //   }
-        // }
-        // ship.alive = shipAlive;
+        if (ship.body == 0)
+          ship.alive = false;
       }
     }
 

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import "hardhat/console.sol";
+
 contract Battleship {
   // constant
   uint8 public constant TOTAL_SHIPS = 4;
@@ -20,7 +22,7 @@ contract Battleship {
   uint8 public constant BOARD_COLS = 9;
 
   struct Ship {
-    uint8[][] body;
+    uint256 body;
     uint8[2] topLeft;
     uint8[2] bottomRight;
     bool alive;
@@ -29,9 +31,9 @@ contract Battleship {
   address public p1;
   address public p2;
   // p1 & p2 attack history list
-  mapping(address => uint8[2][]) moves;
+  mapping(address => uint8[2][]) public moves;
   // p1 & p2 ship setup configuration
-  mapping(address => Ship[]) ships;
+  mapping(address => Ship[]) public ships;
 
   // Event declaration
   event P2Joined(address indexed sender);
@@ -120,12 +122,20 @@ contract Battleship {
     // retrieve the appropriate ship
     Ship[] storage playerShips = ships[msg.sender];
 
-    // Fill the ship body with 0
-    for (uint8 row = 0; row < rowSize; row++) {
-      for (uint8 col = 0; col < colSize; col++) {
-        playerShips[shipId].body[row][col] = 0;
+    if (playerShips.length == 0) {
+      // create empty ships for the player
+      for (uint8 i = 0; i < TOTAL_SHIPS; i++) {
+        playerShips.push(Ship({
+          body: 0,
+          topLeft: [0,0],
+          bottomRight: [0,0],
+          alive: false
+        }));
       }
     }
+
+    // Fill the ship body with bit of 1
+    playerShips[shipId].body = 2**(shipSize[0] * shipSize[1]) - 1;
     playerShips[shipId].topLeft = topLeft;
     playerShips[shipId].bottomRight = bottomRight;
     playerShips[shipId].alive = true;
@@ -163,22 +173,22 @@ contract Battleship {
         && ship.topLeft[1] <= hitXY[1] && hitXY[1] <= ship.bottomRight[1] // for col check
       ) {
         // hit the ship
-        ship.body[hitXY[0] - ship.topLeft[0]][hitXY[1] - ship.topLeft[1]] = 1;
+        // ship.body[hitXY[0] - ship.topLeft[0]][hitXY[1] - ship.topLeft[1]] = 1;
 
         // mark the ship as dead if its body are all hit
-        bool shipAlive = false;
-        uint8 rowSize = ship.bottomRight[0] - ship.topLeft[0] + 1;
-        uint8 colSize = ship.bottomRight[1] - ship.topLeft[1] + 1;
+        // bool shipAlive = false;
+        // uint8 rowSize = ship.bottomRight[0] - ship.topLeft[0] + 1;
+        // uint8 colSize = ship.bottomRight[1] - ship.topLeft[1] + 1;
 
-        for(uint8 row = 0; row < rowSize; row++) {
-          for (uint8 col = 0; col < colSize; col++) {
-            if (ship.body[row][col] == 0) {
-              shipAlive = true;
-              break;
-            }
-          }
-        }
-        ship.alive = shipAlive;
+        // for(uint8 row = 0; row < rowSize; row++) {
+        //   for (uint8 col = 0; col < colSize; col++) {
+        //     if (ship.body[row][col] == 0) {
+        //       shipAlive = true;
+        //       break;
+        //     }
+        //   }
+        // }
+        // ship.alive = shipAlive;
       }
     }
 

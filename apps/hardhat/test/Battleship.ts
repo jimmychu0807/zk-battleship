@@ -7,8 +7,8 @@ enum GameState {
   P2Joined,
   P1Move,
   P2Move,
-  P1Win,
-  P2Win,
+  P1Won,
+  P2Won,
 }
 
 describe("Battleship", function () {
@@ -129,6 +129,34 @@ describe("Battleship", function () {
       )
         .emit(battleship, "SetupShip")
         .withArgs(p2Addr, shipId);
+    });
+
+    it("should not allow game to start without both players complete setting up ships", async() => {
+      const { battleship, p3 } = await loadFixture(p2JoinedFixture);
+
+      await expect(battleship.connect(p3).startGame())
+        .revertedWith(/player .* ships are not properly setup/);
+    });
+
+    it("should allow game to start with both players complete setting up ships", async() => {
+      const { battleship, p1, p2 } = await loadFixture(p2JoinedFixture);
+
+      const p1Battleship = battleship.connect(p1);
+      await p1Battleship.setupShips(0, [0, 0], [0, 1]);
+      await p1Battleship.setupShips(1, [1, 0], [1, 2]);
+      await p1Battleship.setupShips(2, [2, 0], [2, 3]);
+      await p1Battleship.setupShips(3, [3, 0], [4, 3]);
+
+      const p2Battleship = battleship.connect(p2);
+      await p2Battleship.setupShips(0, [0, 0], [0, 1]);
+      await p2Battleship.setupShips(1, [1, 0], [1, 2]);
+      await p2Battleship.setupShips(2, [2, 0], [2, 3]);
+      await p2Battleship.setupShips(3, [3, 0], [4, 3]);
+
+      await expect(p1Battleship.startGame())
+        .emit(battleship, "GameStart");
+
+      expect(await battleship.gameState()).to.equal(GameState.P1Move);
     });
   });
 });

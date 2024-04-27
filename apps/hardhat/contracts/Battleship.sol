@@ -40,6 +40,8 @@ contract Battleship {
   event SetupShip(address indexed sender, uint8 shipId);
   event GameStart();
   event PlayerMove(address indexed sender, uint8[2] hitXY, GameState gameState);
+  event SinkShip(address indexed opponent, uint8 shipIdx);
+  event GameWon(address indexed sender);
 
   // game state: gameSetup, player1Move, player2Move, player1Win, player2Win.
   enum GameState {
@@ -47,8 +49,8 @@ contract Battleship {
     P2Joined,
     P1Move,
     P2Move,
-    P1Win,
-    P2Win
+    P1Won,
+    P2Won
   }
   GameState public gameState;
 
@@ -144,10 +146,13 @@ contract Battleship {
   }
 
   function startGame() public P2JoinedState {
+    require(ships[p1].length == TOTAL_SHIPS, "player 1 ships are not properly setup");
+    require(ships[p2].length == TOTAL_SHIPS, "player 2 ships are not properly setup");
+
     // check that p1ships config and p2ships config are properly configured
     for(uint s = 0; s < TOTAL_SHIPS; s++) {
-      require(ships[p1][s].alive, "player 1 ships are not setup properly");
-      require(ships[p2][s].alive, "player 2 ships are not setup properly");
+      require(ships[p1][s].alive, "player 1 ships are not properly setup");
+      require(ships[p2][s].alive, "player 2 ships are not properly setup");
     }
 
     gameState = GameState.P1Move;
@@ -162,6 +167,9 @@ contract Battleship {
     // Add to the player move list
     uint8[2][] storage playerMoves = moves[msg.sender];
     playerMoves.push(hitXY);
+
+    // Emit an event
+    emit PlayerMove(msg.sender, hitXY, gameState);
 
     // Check if it hits opponent ship
     Ship[] storage opponentShips = msg.sender == p1 ? ships[p2] : ships[p1];
@@ -180,17 +188,21 @@ contract Battleship {
         ship.body &= mask;
 
         // mark the ship as dead if its body are all hit
-        if (ship.body == 0)
+        if (ship.body == 0) {
           ship.alive = false;
+          address opponent = msg.sender == p1 ? p2 : p1;
+          emit SinkShip(opponent, sIdx);
+        }
       }
     }
 
     // Update the game state
-    gameState = gameState == GameState.P1Move
-      ? (isGameEnd() ? GameState.P1Win : GameState.P2Move)
-      : (isGameEnd() ? GameState.P2Win : GameState.P1Move);
-
-    emit PlayerMove(msg.sender, hitXY, gameState);
+    if (isGameEnd()) {
+      gameState = gameState == GameState.P1Move ? GameState.P1Won : GameState.P2Won;
+      emit GameWon(msg.sender);
+    } else {
+      gameState = gameState == GameState.P1Move ? GameState.P2Move : GameState.P1Move;
+    }
   }
 
   function isGameEnd() public view returns (bool) {

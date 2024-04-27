@@ -39,7 +39,7 @@ contract Battleship {
   event P2Joined(address indexed sender);
   event SetupShip(address indexed sender, uint8 shipId);
   event GameStart();
-  event PlayerMove(address indexed sender, uint8[2] hitXY, GameState gameState);
+  event PlayerMove(address indexed sender, uint8[2] hitRC, GameState gameState);
   event SinkShip(address indexed opponent, uint8 shipIdx);
   event GameWon(address indexed sender);
 
@@ -160,16 +160,16 @@ contract Battleship {
     emit GameStart();
   }
 
-  function playerMove(uint8[2] memory hitXY) public PlayerToMove {
+  function playerMove(uint8[2] memory hitRC) public PlayerToMove {
     // Logic of adding the move in the corresponding move list
-    require(hitXY[0] < BOARD_ROWS && hitXY[1] < BOARD_COLS, "Player move is out of bound");
+    require(hitRC[0] < BOARD_ROWS && hitRC[1] < BOARD_COLS, "Player move is out of bound");
 
     // Add to the player move list
     uint8[2][] storage playerMoves = moves[msg.sender];
-    playerMoves.push(hitXY);
+    playerMoves.push(hitRC);
 
     // Emit an event
-    emit PlayerMove(msg.sender, hitXY, gameState);
+    emit PlayerMove(msg.sender, hitRC, gameState);
 
     // Check if it hits opponent ship
     Ship[] storage opponentShips = msg.sender == p1 ? ships[p2] : ships[p1];
@@ -177,12 +177,12 @@ contract Battleship {
     for (uint8 sIdx = 0; sIdx < TOTAL_SHIPS; sIdx++) {
       Ship storage ship = opponentShips[sIdx];
       if (
-        ship.topLeft[0] <= hitXY[0] && hitXY[0] <= ship.bottomRight[0] // for row check
-        && ship.topLeft[1] <= hitXY[1] && hitXY[1] <= ship.bottomRight[1] // for col check
+        ship.topLeft[0] <= hitRC[0] && hitRC[0] <= ship.bottomRight[0] // for row check
+        && ship.topLeft[1] <= hitRC[1] && hitRC[1] <= ship.bottomRight[1] // for col check
       ) {
         // hit the ship
         uint8 shipRows = ship.bottomRight[1] - ship.topLeft[1] + 1;
-        uint8 bodyIdx = (hitXY[0] - ship.topLeft[0]) * shipRows + (hitXY[1] - ship.topLeft[1] + 1);
+        uint8 bodyIdx = (hitRC[0] - ship.topLeft[0]) * shipRows + (hitRC[1] - ship.topLeft[1] + 1);
         uint8 reverseIdx = (SHIP_SIZES[sIdx][0] * SHIP_SIZES[sIdx][1]) - bodyIdx - 1;
         uint256 mask = ~(1 << reverseIdx);
         ship.body &= mask;

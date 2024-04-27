@@ -178,6 +178,15 @@ describe("Battleship", function () {
   describe("Player moves", () => {
     it("should reject moves that are out of bound", async () => {
       const { battleship, p1, p2 } = await loadFixture(gameStartFixture);
+
+      const p1Battleship = battleship.connect(p1);
+      const [boardRow, boardCol] = await Promise.all([
+        p1Battleship.BOARD_ROWS(),
+        p1Battleship.BOARD_COLS(),
+      ]);
+      await expect(p1Battleship.playerMove([boardRow, boardCol])).revertedWith(
+        /move is out of bound/
+      );
     });
     it("should accept move that miss");
     it("should accept move that hit");

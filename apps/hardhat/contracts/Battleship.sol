@@ -40,8 +40,8 @@ contract Battleship {
   event SetupShip(address indexed sender, uint8 shipId);
   event GameStart();
   event PlayerMove(address indexed sender, uint8[2] hitRC, GameState gameState);
+  event Hit(address indexed opponent);
   event SinkShip(address indexed opponent, uint8 shipIdx);
-  event GameWon(address indexed sender);
 
   // game state: gameSetup, player1Move, player2Move, player1Win, player2Win.
   enum GameState {
@@ -168,9 +168,6 @@ contract Battleship {
     uint8[2][] storage playerMoves = moves[msg.sender];
     playerMoves.push(hitRC);
 
-    // Emit an event
-    emit PlayerMove(msg.sender, hitRC, gameState);
-
     // Check if it hits opponent ship
     Ship[] storage opponentShips = msg.sender == p1 ? ships[p2] : ships[p1];
 
@@ -181,28 +178,30 @@ contract Battleship {
         && ship.topLeft[1] <= hitRC[1] && hitRC[1] <= ship.bottomRight[1] // for col check
       ) {
         // hit the ship
-        uint8 shipRows = ship.bottomRight[1] - ship.topLeft[1] + 1;
-        uint8 bodyIdx = (hitRC[0] - ship.topLeft[0]) * shipRows + (hitRC[1] - ship.topLeft[1] + 1);
+        uint8 rowWidth = ship.bottomRight[1] - ship.topLeft[1] + 1;
+        uint8 bodyIdx = (hitRC[0] - ship.topLeft[0]) * rowWidth + (hitRC[1] - ship.topLeft[1]);
         uint8 reverseIdx = (SHIP_SIZES[sIdx][0] * SHIP_SIZES[sIdx][1]) - bodyIdx - 1;
         uint256 mask = ~(1 << reverseIdx);
         ship.body &= mask;
 
         // mark the ship as dead if its body are all hit
-        if (ship.body == 0) {
+        address opponent = msg.sender == p1 ? p2 : p1;
+        if (ship.body > 0) {
+          emit Hit(opponent);
+        } else {
           ship.alive = false;
-          address opponent = msg.sender == p1 ? p2 : p1;
           emit SinkShip(opponent, sIdx);
         }
       }
     }
 
     // Update the game state
-    if (isGameEnd()) {
-      gameState = gameState == GameState.P1Move ? GameState.P1Won : GameState.P2Won;
-      emit GameWon(msg.sender);
-    } else {
-      gameState = gameState == GameState.P1Move ? GameState.P2Move : GameState.P1Move;
-    }
+    gameState = isGameEnd()
+      ? (gameState == GameState.P1Move ? GameState.P1Won : GameState.P2Won)
+      : (gameState == GameState.P1Move ? GameState.P2Move : GameState.P1Move);
+
+    // Emit an event
+    emit PlayerMove(msg.sender, hitRC, gameState);
   }
 
   function isGameEnd() public view returns (bool) {

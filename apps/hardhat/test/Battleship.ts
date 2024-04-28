@@ -136,16 +136,16 @@ describe("Battleship", function () {
       const shipId = 1;
       const [p2Addr, totalShips, shipRows, shipCols, boardRows, boardCols] =
         await Promise.all([
-          await p2.getAddress(),
-          Number(await battleship.TOTAL_SHIPS()),
-          Number(await battleship.SHIP_SIZES(shipId, 0)),
-          Number(await battleship.SHIP_SIZES(shipId, 1)),
-          Number(await battleship.BOARD_ROWS()),
-          Number(await battleship.BOARD_COLS()),
+          p2.getAddress(),
+          battleship.TOTAL_SHIPS(),
+          battleship.SHIP_SIZES(shipId, 0),
+          battleship.SHIP_SIZES(shipId, 1),
+          battleship.BOARD_ROWS(),
+          battleship.BOARD_COLS(),
         ]);
 
-      const topLeft = [0, 0];
-      const bottomRight = [shipRows - 1, shipCols - 1];
+      const topLeft = [0n, 0n];
+      const bottomRight = [shipRows - 1n, shipCols - 1n];
       await expect(
         battleship.connect(p2).setupShips(shipId, topLeft, bottomRight)
       )
@@ -178,18 +178,68 @@ describe("Battleship", function () {
   describe("Player moves", () => {
     it("should reject moves that are out of bound", async () => {
       const { battleship, p1, p2 } = await loadFixture(gameStartFixture);
-
       const p1Battleship = battleship.connect(p1);
       const [boardRow, boardCol] = await Promise.all([
         p1Battleship.BOARD_ROWS(),
         p1Battleship.BOARD_COLS(),
       ]);
+
       await expect(p1Battleship.playerMove([boardRow, boardCol])).revertedWith(
-        /move is out of bound/
+        /Player move is out of bound/
       );
     });
-    it("should accept move that miss");
-    it("should accept move that hit");
+    it("should accept move that miss", async () => {
+      const { battleship, p1 } = await loadFixture(gameStartFixture);
+      const p1Battleship = battleship.connect(p1);
+      const [boardRow, boardCol, p1Addr] = await Promise.all([
+        p1Battleship.BOARD_ROWS(),
+        p1Battleship.BOARD_COLS(),
+        p1.getAddress(),
+      ]);
+
+      const move = [0n, boardCol - 1n];
+      await p1Battleship.playerMove(move);
+
+      // Check the state
+      const rec = await Promise.all([
+        battleship.moves(p1Addr, 0, 0),
+        battleship.moves(p1Addr, 0, 1),
+      ]);
+      expect(rec).to.deep.equal(move);
+
+      // query events in the latest block
+      const events = await battleship.queryFilter("*", "latest");
+      expect(events.length).to.equal(1);
+      const event = events[0];
+      expect(event.eventName).equal("PlayerMove");
+      expect(event.args).deep.equal([p1Addr, move, GameState.P2Move]);
+    });
+
+    it("should accept move that hit", async () => {
+      const { battleship, p1, p2 } = await loadFixture(gameStartFixture);
+      const p1Battleship = battleship.connect(p1);
+      const [p1Addr, p2Addr] = await Promise.all([
+        p1.getAddress(),
+        p2.getAddress(),
+      ]);
+
+      // Hit the Submarine
+      const move = [1n, 0n];
+      await p1Battleship.playerMove(move);
+
+      // query events in the latest block
+      const events = await battleship.queryFilter("*", "latest");
+      expect(events.length).to.equal(2);
+      const playerMoveEv = events.find((ev) => ev.eventName === "PlayerMove");
+      expect(playerMoveEv!.args).deep.equal([p1Addr, move, GameState.P2Move]);
+      const hitEv = events.find((ev) => ev.eventName === "Hit");
+      expect(hitEv!.args).deep.equal([p2Addr]);
+
+      // Retrieve and check the ship state
+      const sub = await p1Battleship.ships(p2Addr, 1);
+      expect(sub).to.deep.equal([3n, true]);
+    });
+
     it("should be able to sink a ship");
     it("should end a game when all ships are sunk");
   });

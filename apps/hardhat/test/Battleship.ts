@@ -223,7 +223,7 @@ describe("Battleship", function () {
         p2.getAddress(),
       ]);
 
-      // Hit the Submarine
+      // Hit the Cruiser
       const move = [1n, 0n];
       await p1Battleship.playerMove(move);
 
@@ -240,7 +240,41 @@ describe("Battleship", function () {
       expect(sub).to.deep.equal([3n, true]);
     });
 
-    it("should be able to sink a ship");
+    it("should be able to sink a ship", async () => {
+      const { battleship, p1, p2 } = await loadFixture(gameStartFixture);
+      const p1Battleship = battleship.connect(p1);
+      const p2Battleship = battleship.connect(p2);
+      const [p1Addr, p2Addr, bRows, bCols] = await Promise.all([
+        p1.getAddress(),
+        p2.getAddress(),
+        p1Battleship.BOARD_ROWS(),
+        p1Battleship.BOARD_COLS(),
+      ]);
+
+      // Completely sink the Cruiser
+      const p2Move = [bRows - 1n, bCols - 1n];
+      await p1Battleship.playerMove([1n, 0n]);
+      await p2Battleship.playerMove(p2Move);
+      await p1Battleship.playerMove([1n, 2n]);
+
+      // Check the ship state
+      let sub = await p1Battleship.ships(p2Addr, 1);
+      expect(sub).to.deep.equal([2n, true]);
+
+      await p2Battleship.playerMove(p2Move);
+      await p1Battleship.playerMove([1n, 1n]);
+
+      // query events in the latest block
+      const events = await battleship.queryFilter("*", "latest");
+      expect(events.length).to.equal(2);
+      const ev = events.find((ev) => ev.eventName === "SinkShip");
+      expect(ev!.args).deep.equal([p2Addr, 1]); // 1 is the ID of Cruiser. Refer to SHIP_NAMES.
+
+      // Check the ship state
+      sub = await p1Battleship.ships(p2Addr, 1);
+      expect(sub).to.deep.equal([0n, false]);
+    });
+
     it("should end a game when all ships are sunk");
   });
 });

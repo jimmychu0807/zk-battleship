@@ -10,8 +10,16 @@
     "validate": "pnpm build && pnpm lint"
   },
   "dependencies": {
+    "@chakra-ui/react": "^2.8.2",
+    "@emotion/react": "^11.11.4",
+    "@emotion/styled": "^11.11.5",
+    "@tanstack/react-query": "^5.32.0",
+    "@web3modal/wagmi": "^4.1.11",
+    "framer-motion": "^11.1.7",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "viem": "2.x",
+    "wagmi": "^2.7.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.66",

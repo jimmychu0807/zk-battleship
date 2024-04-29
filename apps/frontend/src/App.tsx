@@ -3,9 +3,8 @@ import "./App.css";
 function App() {
   return (
     <>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <p>Connect with your Wallet</p>
+      <w3m-button />
     </>
   );
 }

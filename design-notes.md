@@ -1,2 +1,0 @@
-- implement the game without zero-knowledge
-

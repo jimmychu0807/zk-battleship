@@ -1,6 +1,12 @@
+# Ignore artifacts:
+
 **/hardhat/artifacts/*
 **/hardhat/cache/*
 **/hardhat/ignition/deployments
 **/hardhat/typechain-types/*
 *.md
 *.yaml
+
+build
+coverage
+pnpm-lock.yaml

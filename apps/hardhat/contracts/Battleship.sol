@@ -136,6 +136,8 @@ contract Battleship {
       }
     }
 
+    // TODO: Check the ship placement doesn't overlapp with other ships
+
     // Fill the ship body with bit of 1
     playerShips[shipId].body = 2**(shipSize[0] * shipSize[1]) - 1;
     playerShips[shipId].topLeft = topLeft;
@@ -209,10 +211,24 @@ contract Battleship {
     Ship[] storage p1ships = ships[p1];
     Ship[] storage p2ships = ships[p2];
 
-    bool bEnd = true;
+    if (gameState == GameState.P1Joined || gameState == GameState.P2Joined)
+      return false;
 
+    if (gameState == GameState.P1Won || gameState == GameState.P2Won)
+      return true;
+
+    bool bEnd = true;
     for (uint8 s = 0; s < TOTAL_SHIPS; s++) {
-      if (p1ships[s].alive || p2ships[s].alive) {
+      if (p1ships[s].alive) {
+        bEnd = false;
+        break;
+      }
+    }
+    if (bEnd) return bEnd;
+
+    bEnd = true;
+    for (uint8 s = 0; s < TOTAL_SHIPS; s++) {
+      if (p2ships[s].alive) {
         bEnd = false;
         break;
       }

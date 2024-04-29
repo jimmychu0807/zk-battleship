@@ -14,6 +14,7 @@ enum GameState {
 }
 
 const helpers = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async setupPlayerShips(battleship: any, p: any) {
     const pBattleship = battleship.connect(p);
     await pBattleship.setupShips(0, [0, 0], [0, 1]);
@@ -23,10 +24,10 @@ const helpers = {
   },
 
   async playerMove(
-    battleship: any,
-    p1: any,
+    battleship: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    p1: any, // eslint-disable-line @typescript-eslint/no-explicit-any
     p1Moves: [BigNumberish, BigNumberish][],
-    p2: any,
+    p2: any, // eslint-disable-line @typescript-eslint/no-explicit-any
     p2Moves: [BigNumberish, BigNumberish][]
   ) {
     const p1b = battleship.connect(p1);
@@ -45,7 +46,7 @@ const helpers = {
 
 describe("Battleship", function () {
   async function deployFixture() {
-    // @ts-ignore
+    // @ts-expect-error seems hardhat helpers are not included
     const [p1, p2] = await hre.ethers.getSigners();
     const Battleship = await hre.ethers.getContractFactory("Battleship");
     const battleship = await Battleship.deploy();
@@ -53,7 +54,7 @@ describe("Battleship", function () {
   }
 
   async function p2JoinedFixture() {
-    // @ts-ignore
+    // @ts-expect-error seems hardhat helpers are not included
     const [p1, p2, p3] = await hre.ethers.getSigners();
     const Battleship = await hre.ethers.getContractFactory("Battleship");
     const battleship = await Battleship.deploy();
@@ -63,7 +64,7 @@ describe("Battleship", function () {
   }
 
   async function gameStartFixture() {
-    // @ts-ignore
+    // @ts-expect-error seems hardhat helpers are not included
     const [p1, p2] = await hre.ethers.getSigners();
     const Battleship = await hre.ethers.getContractFactory("Battleship");
     const battleship = await Battleship.deploy();
@@ -111,7 +112,6 @@ describe("Battleship", function () {
 
     it("should not allow setting up ships with invalid parameters", async () => {
       const { battleship, p1 } = await loadFixture(p2JoinedFixture);
-      const p1Addr = await p1.getAddress();
 
       // shipId out of bound
       const shipId = 0;
@@ -156,15 +156,11 @@ describe("Battleship", function () {
     it("should allow setting up ships with valid parameters", async () => {
       const { battleship, p2 } = await loadFixture(p2JoinedFixture);
       const shipId = 1;
-      const [p2Addr, totalShips, shipRows, shipCols, boardRows, boardCols] =
-        await Promise.all([
-          p2.getAddress(),
-          battleship.TOTAL_SHIPS(),
-          battleship.SHIP_SIZES(shipId, 0),
-          battleship.SHIP_SIZES(shipId, 1),
-          battleship.BOARD_ROWS(),
-          battleship.BOARD_COLS(),
-        ]);
+      const [p2Addr, shipRows, shipCols] = await Promise.all([
+        p2.getAddress(),
+        battleship.SHIP_SIZES(shipId, 0),
+        battleship.SHIP_SIZES(shipId, 1),
+      ]);
 
       const topLeft = [0n, 0n];
       const bottomRight = [shipRows - 1n, shipCols - 1n];
@@ -199,7 +195,7 @@ describe("Battleship", function () {
 
   describe("Player moves", () => {
     it("should reject moves that are out of bound", async () => {
-      const { battleship, p1, p2 } = await loadFixture(gameStartFixture);
+      const { battleship, p1 } = await loadFixture(gameStartFixture);
       const p1Battleship = battleship.connect(p1);
       const [boardRow, boardCol] = await Promise.all([
         p1Battleship.BOARD_ROWS(),
@@ -213,8 +209,7 @@ describe("Battleship", function () {
     it("should accept move that miss", async () => {
       const { battleship, p1 } = await loadFixture(gameStartFixture);
       const p1Battleship = battleship.connect(p1);
-      const [boardRow, boardCol, p1Addr] = await Promise.all([
-        p1Battleship.BOARD_ROWS(),
+      const [boardCol, p1Addr] = await Promise.all([
         p1Battleship.BOARD_COLS(),
         p1.getAddress(),
       ]);
@@ -265,7 +260,6 @@ describe("Battleship", function () {
     it("should be able to sink a ship", async () => {
       const { battleship, p1, p2 } = await loadFixture(gameStartFixture);
       const p1Battleship = battleship.connect(p1);
-      const p2Battleship = battleship.connect(p2);
       const [p2Addr, bRows, bCols] = await Promise.all([
         p2.getAddress(),
         p1Battleship.BOARD_ROWS(),

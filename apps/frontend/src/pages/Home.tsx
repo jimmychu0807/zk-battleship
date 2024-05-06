@@ -2,13 +2,19 @@ import { useEffect, useContext, useState } from "react";
 import { Flex, Text, ButtonGroup, Button } from "@chakra-ui/react";
 import { useWalletInfo, useWeb3ModalState } from "@web3modal/wagmi/react";
 import { useAccount, useWalletClient } from "wagmi";
-import { getContractAddress } from "viem";
+import { getContractAddress, WalletClient, PublicClient } from "viem";
 
 import { PublicClientsContext } from "../components/Web3ModalProvider";
 
 // QUESTION: how do you package and deploy the contract artifact from hardhat package?
 //   L NX> check how dark forest handle this.
 import battleshipArtifact from "../../../hardhat/artifacts/contracts/Battleship.sol/Battleship.json";
+
+interface WalletInfo {
+  address: string;
+  walletClient: WalletClient;
+  publicClient: PublicClient;
+}
 
 function PromptForWalletConnect() {
   return (
@@ -18,7 +24,7 @@ function PromptForWalletConnect() {
   );
 }
 
-async function deployBattleshipGame(walletInfo) {
+async function deployBattleshipGame(walletInfo: WalletInfo | undefined) {
   if (!walletInfo) throw new Error("walletInfo undefined");
 
   const { abi, bytecode } = battleshipArtifact;
@@ -32,24 +38,29 @@ async function deployBattleshipGame(walletInfo) {
   console.log("Deployment hash:", txHash);
 
   const tx = await publicClient.getTransaction({ hash: txHash });
-  const contractAddr = getContractAddress({ from: tx.from, nonce: tx.nonce });
+  const contractAddr = getContractAddress({
+    from: tx.from,
+    nonce: BigInt(tx.nonce),
+  });
 
   console.log("Battleship contract addr:", contractAddr);
 }
 
 function GameStart() {
-  const [walletInfo, setWalletInfo] = useState(undefined);
+  const [walletInfo, setWalletInfo] = useState<WalletInfo | undefined>(
+    undefined
+  );
   const result = useWalletClient();
   const { address } = useAccount();
   const { selectedNetworkId } = useWeb3ModalState();
   const pcs = useContext(PublicClientsContext);
 
   useEffect(() => {
-    if (result.data) {
+    if (result.data && selectedNetworkId) {
       setWalletInfo({
-        address,
+        address: address as string,
         walletClient: result.data,
-        publicClient: pcs[selectedNetworkId],
+        publicClient: pcs[parseInt(selectedNetworkId)],
       });
     }
   }, [result.data, address, pcs, selectedNetworkId]);

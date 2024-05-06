@@ -7,7 +7,7 @@ import {
   optimismSepolia, // Optimism
   bscTestnet, // BSC Testnet
 } from "wagmi/chains";
-import { createPublicClient, http } from "viem";
+import { createPublicClient, http, PublicClient } from "viem";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { wagmiProjectId, project, devChain } from "../consts.ts";
@@ -39,14 +39,17 @@ const wagmiConfig = defaultWagmiConfig({
 });
 
 // Create Public Client used in viem
-const publicClients = chains.reduce((mem, chain) => {
-  const pc = createPublicClient({
-    chain,
-    transport: http(),
-  });
-  mem[chain.id] = pc;
-  return mem;
-}, {});
+const publicClients: Record<number, PublicClient> = chains.reduce(
+  (mem, chain) => {
+    const pc = createPublicClient({
+      chain,
+      transport: http(),
+    });
+    mem[chain.id] = pc;
+    return mem;
+  },
+  {}
+);
 
 export const PublicClientsContext = createContext(publicClients);
 

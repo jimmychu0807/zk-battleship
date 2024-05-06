@@ -12,6 +12,7 @@
   },
   "scripts": {
     "clean": "hardhat clean",
+    "dev": "hardhat node",
     "compile": "hardhat --typecheck compile",
     "test": "pnpm compile && hardhat --typecheck test",
     "validate": "pnpm test"

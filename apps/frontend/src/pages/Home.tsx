@@ -1,5 +1,12 @@
 import { useEffect, useContext, useState } from "react";
-import { Flex, Text, ButtonGroup, Button, Card, CardBody } from "@chakra-ui/react";
+import {
+  Flex,
+  Text,
+  ButtonGroup,
+  Button,
+  Card,
+  CardBody,
+} from "@chakra-ui/react";
 import { useWalletInfo, useWeb3ModalState } from "@web3modal/wagmi/react";
 import { useAccount, useWalletClient } from "wagmi";
 import { getContractAddress, WalletClient, PublicClient } from "viem";
@@ -26,7 +33,11 @@ function PromptForWalletConnect() {
   );
 }
 
-async function deployBattleshipGame(walletInfo: WalletInfo | undefined, navigate, setCreatedGames) {
+async function deployBattleshipGame(
+  walletInfo: WalletInfo | undefined,
+  navigate,
+  setCreatedGames
+) {
   if (!walletInfo) throw new Error("walletInfo undefined");
 
   const { abi, bytecode } = battleshipArtifact;
@@ -62,7 +73,7 @@ function GameStart() {
   const { selectedNetworkId } = useWeb3ModalState();
   const navigate = useNavigate();
   const pcs = useContext(PublicClientsContext);
-  const [createdGames, setCreatedGames] = useLocalStorage('created-games', []);
+  const [createdGames, setCreatedGames] = useLocalStorage("created-games", []);
 
   console.log("createdGames:", createdGames);
 
@@ -80,31 +91,39 @@ function GameStart() {
     <h1>Wallet fetching Error</h1>
   ) : result.isPending ? (
     <h1>Loading...</h1>
-  ) : (<Flex direction="column">
-    <Flex>{
-      createdGames.map((addr) => <GameCard contractAddr={addr} />)
-    }</Flex>
-    <ButtonGroup colorScheme="blue" variant="outline" spacing="6">
-      <Button
-        height="5em"
-        width="10em"
-        onClick={() => deployBattleshipGame(walletInfo, navigate, setCreatedGames)}
-      >
-        Create Game
-      </Button>
-      <Button height="5em" width="10em">
-        Join Game
-      </Button>
-    </ButtonGroup>
-  </Flex>);
+  ) : (
+    <Flex direction="column">
+      <Flex>
+        {createdGames.map((addr) => (
+          <GameCard contractAddr={addr} />
+        ))}
+      </Flex>
+      <ButtonGroup colorScheme="blue" variant="outline" spacing="6">
+        <Button
+          height="5em"
+          width="10em"
+          onClick={() =>
+            deployBattleshipGame(walletInfo, navigate, setCreatedGames)
+          }
+        >
+          Create Game
+        </Button>
+        <Button height="5em" width="10em">
+          Join Game
+        </Button>
+      </ButtonGroup>
+    </Flex>
+  );
 }
 
 function GameCard({ contractAddr }) {
-  return <Card>
-    <CardBody>
-      <Text>{ contractAddr }</Text>
-    </CardBody>
-  </Card>
+  return (
+    <Card>
+      <CardBody>
+        <Text>{contractAddr}</Text>
+      </CardBody>
+    </Card>
+  );
 }
 
 export default function Home() {

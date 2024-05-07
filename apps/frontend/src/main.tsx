@@ -12,7 +12,7 @@ import {
 import { Web3ModalProvider } from "./components/Web3ModalProvider";
 import App from "./App";
 import Home from "./pages/Home";
-import Game, { loader as gameLoader } from "./pages/Game";
+import Game from "./pages/Game";
 
 import "./index.css";
 
@@ -24,7 +24,7 @@ const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<App />}>
       <Route index element={<Home />} />
-      <Route path="/game/:contractAddr" element={ <Game /> } />
+      <Route path="/game/:contractAddr" element={<Game />} />
     </Route>
   )
 );

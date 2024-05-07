@@ -6,6 +6,7 @@ export const project = {
   name: "ZK Battleship",
   desc: "ZK Battleship Game",
   homepage: "https://jimmychu0807.hk/zk-battleship",
+  authorHomepage: "https://jimmychu0807.hk",
   github: "https://github.com/jimmychu0807/zk-battleship",
 };
 

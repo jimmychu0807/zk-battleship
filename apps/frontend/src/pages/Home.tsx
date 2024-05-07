@@ -1,8 +1,10 @@
 import { useEffect, useContext, useState } from "react";
-import { Flex, Text, ButtonGroup, Button } from "@chakra-ui/react";
+import { Flex, Text, ButtonGroup, Button, Card, CardBody } from "@chakra-ui/react";
 import { useWalletInfo, useWeb3ModalState } from "@web3modal/wagmi/react";
 import { useAccount, useWalletClient } from "wagmi";
 import { getContractAddress, WalletClient, PublicClient } from "viem";
+import { useNavigate } from "react-router-dom";
+import { useLocalStorage } from "usehooks-ts";
 
 import { PublicClientsContext } from "../components/Web3ModalProvider";
 
@@ -24,7 +26,7 @@ function PromptForWalletConnect() {
   );
 }
 
-async function deployBattleshipGame(walletInfo: WalletInfo | undefined) {
+async function deployBattleshipGame(walletInfo: WalletInfo | undefined, navigate, setCreatedGames) {
   if (!walletInfo) throw new Error("walletInfo undefined");
 
   const { abi, bytecode } = battleshipArtifact;
@@ -35,7 +37,6 @@ async function deployBattleshipGame(walletInfo: WalletInfo | undefined) {
     bytecode,
     args: [],
   });
-  console.log("Deployment hash:", txHash);
 
   const tx = await publicClient.getTransaction({ hash: txHash });
   const contractAddr = getContractAddress({
@@ -44,6 +45,12 @@ async function deployBattleshipGame(walletInfo: WalletInfo | undefined) {
   });
 
   console.log("Battleship contract addr:", contractAddr);
+
+  // save the contractAddr in localStorage
+  setCreatedGames((prev: Array<string>) => [...prev, contractAddr]);
+
+  // navigate to another page
+  navigate(`/game/${contractAddr}`);
 }
 
 function GameStart() {
@@ -53,7 +60,11 @@ function GameStart() {
   const result = useWalletClient();
   const { address } = useAccount();
   const { selectedNetworkId } = useWeb3ModalState();
+  const navigate = useNavigate();
   const pcs = useContext(PublicClientsContext);
+  const [createdGames, setCreatedGames] = useLocalStorage('created-games', []);
+
+  console.log("createdGames:", createdGames);
 
   useEffect(() => {
     if (result.data && selectedNetworkId) {
@@ -69,12 +80,15 @@ function GameStart() {
     <h1>Wallet fetching Error</h1>
   ) : result.isPending ? (
     <h1>Loading...</h1>
-  ) : (
+  ) : (<Flex direction="column">
+    <Flex>{
+      createdGames.map((addr) => <GameCard contractAddr={addr} />)
+    }</Flex>
     <ButtonGroup colorScheme="blue" variant="outline" spacing="6">
       <Button
         height="5em"
         width="10em"
-        onClick={() => deployBattleshipGame(walletInfo)}
+        onClick={() => deployBattleshipGame(walletInfo, navigate, setCreatedGames)}
       >
         Create Game
       </Button>
@@ -82,7 +96,15 @@ function GameStart() {
         Join Game
       </Button>
     </ButtonGroup>
-  );
+  </Flex>);
+}
+
+function GameCard({ contractAddr }) {
+  return <Card>
+    <CardBody>
+      <Text>{ contractAddr }</Text>
+    </CardBody>
+  </Card>
 }
 
 export default function Home() {

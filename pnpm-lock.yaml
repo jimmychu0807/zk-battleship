@@ -71,6 +71,9 @@ importers:
       react-router-dom:
         specifier: ^6.23.0
         version: 6.23.0(react-dom@18.3.0(react@18.3.0))(react@18.3.0)
+      usehooks-ts:
+        specifier: ^3.1.0
+        version: 3.1.0(react@18.3.0)
       viem:
         specifier: 2.x
         version: 2.9.28(bufferutil@4.0.8)(typescript@5.4.5)(utf-8-validate@6.0.3)(zod@3.22.4)
@@ -6843,6 +6846,12 @@ packages:
     resolution: {integrity: sha512-eEgnFxGQ1Ife9bzYs6VLi8/4X6CObHMw9Qr9tPY43iKwsPw8xE8+EFsf/2cFZ5S3esXgpWgtSCtLNS41F+sKPA==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0
+
+  usehooks-ts@3.1.0:
+    resolution: {integrity: sha512-bBIa7yUyPhE1BCc0GmR96VU/15l/9gP1Ch5mYdLcFBaFGQsdmXkvjV0TtOqW1yUd6VjIwDunm+flSciCQXujiw==}
+    engines: {node: '>=16.15.0'}
+    peerDependencies:
+      react: ^16.8.0  || ^17 || ^18
 
   utf-8-validate@6.0.3:
     resolution: {integrity: sha512-uIuGf9TWQ/y+0Lp+KGZCMuJWc3N9BHA+l/UmHd/oUHwJJDeysyTRxNQVkbzsIWfGFbRe3OcgML/i0mvVRPOyDA==}
@@ -15520,6 +15529,11 @@ snapshots:
 
   use-sync-external-store@1.2.0(react@18.3.0):
     dependencies:
+      react: 18.3.0
+
+  usehooks-ts@3.1.0(react@18.3.0):
+    dependencies:
+      lodash.debounce: 4.0.8
       react: 18.3.0
 
   utf-8-validate@6.0.3:

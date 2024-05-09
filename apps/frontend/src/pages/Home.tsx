@@ -11,7 +11,7 @@ import { useWalletInfo, useWeb3ModalState } from "@web3modal/wagmi/react";
 import { useAccount, useWalletClient } from "wagmi";
 import { getContractAddress, WalletClient, PublicClient } from "viem";
 import { useNavigate, Link } from "react-router-dom";
-import { useLocalStorage } from "usehooks-ts";
+import { useLocalStorage, useToggle } from "usehooks-ts";
 import { usePublicClient } from "../hooks/usePublicClient";
 
 import { battleshipArtifact } from "../helpers";
@@ -68,6 +68,7 @@ function GameStart() {
   const { selectedNetworkId } = useWeb3ModalState();
   const publicClient = usePublicClient(selectedNetworkId);
   const navigate = useNavigate();
+  const [showJoinGame, toggleJoinGame] = useToggle(false);
   const [createdGames, setCreatedGames, forgetCreatedGames] = useLocalStorage(
     "created-games",
     []
@@ -114,15 +115,21 @@ function GameStart() {
         >
           Create Game
         </Button>
-        <Button height="5em" width="10em">
+        <Button height="5em" width="10em" onClick={toggleJoinGame}>
           Join Game
         </Button>
       </ButtonGroup>
+      {showJoinGame && <JoinGame />}
+
       {import.meta.env.DEV && (
         <Button onClick={forgetCreatedGames}>Forget Games</Button>
       )}
     </Flex>
   );
+}
+
+function JoinGame() {
+  return <h1>Join Game</h1>;
 }
 
 function GameCard({ contractAddr }) {

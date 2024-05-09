@@ -1,4 +1,4 @@
-import { ReactNode, createContext } from "react";
+import { ReactNode } from "react";
 import { createWeb3Modal } from "@web3modal/wagmi/react";
 import { defaultWagmiConfig } from "@web3modal/wagmi/react/config";
 import { WagmiProvider } from "wagmi";
@@ -7,10 +7,10 @@ import {
   optimismSepolia, // Optimism
   bscTestnet, // BSC Testnet
 } from "wagmi/chains";
-import { createPublicClient, http, PublicClient } from "viem";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-import { wagmiProjectId, project, devChain } from "../consts.ts";
+import { wagmiProjectId, project, devChain } from "../consts";
+import { PublicClientProvider } from "./PublicClientContext";
 
 interface Props {
   children?: ReactNode;
@@ -38,21 +38,6 @@ const wagmiConfig = defaultWagmiConfig({
   metadata,
 });
 
-// Create Public Client used in viem
-const publicClients: Record<number, PublicClient> = chains.reduce(
-  (mem, chain) => {
-    const pc = createPublicClient({
-      chain,
-      transport: http(),
-    });
-    mem[chain.id] = pc;
-    return mem;
-  },
-  {}
-);
-
-export const PublicClientsContext = createContext(publicClients);
-
 // create the modal
 createWeb3Modal({
   wagmiConfig,
@@ -65,9 +50,9 @@ export function Web3ModalProvider({ children }: Props) {
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <PublicClientsContext.Provider value={publicClients}>
+        <PublicClientProvider chains={chains}>
           {children}
-        </PublicClientsContext.Provider>
+        </PublicClientProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );

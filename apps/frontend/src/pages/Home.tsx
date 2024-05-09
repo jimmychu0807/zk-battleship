@@ -12,8 +12,7 @@ import { useAccount, useWalletClient } from "wagmi";
 import { getContractAddress, WalletClient, PublicClient } from "viem";
 import { useNavigate } from "react-router-dom";
 import { useLocalStorage } from "usehooks-ts";
-
-import { PublicClientsContext } from "../components/Web3ModalProvider";
+import { usePublicClient } from "../components/PublicClientContext";
 
 // QUESTION: how do you package and deploy the contract artifact from hardhat package?
 //   L NX> check how dark forest handle this.
@@ -71,8 +70,8 @@ function GameStart() {
   const result = useWalletClient();
   const { address } = useAccount();
   const { selectedNetworkId } = useWeb3ModalState();
+  const publicClient = usePublicClient(selectedNetworkId);
   const navigate = useNavigate();
-  const pcs = useContext(PublicClientsContext);
   const [createdGames, setCreatedGames] = useLocalStorage("created-games", []);
 
   console.log("createdGames:", createdGames);
@@ -82,10 +81,10 @@ function GameStart() {
       setWalletInfo({
         address: address as string,
         walletClient: result.data,
-        publicClient: pcs[parseInt(selectedNetworkId)],
+        publicClient,
       });
     }
-  }, [result.data, address, pcs, selectedNetworkId]);
+  }, [result.data, address, publicClient, selectedNetworkId]);
 
   return result.isError ? (
     <h1>Wallet fetching Error</h1>
@@ -93,9 +92,9 @@ function GameStart() {
     <h1>Loading...</h1>
   ) : (
     <Flex direction="column">
-      <Flex>
+      <Flex direction="column">
         {createdGames.map((addr) => (
-          <GameCard contractAddr={addr} />
+          <GameCard id={`gameCard-${addr}`} key={`gameCard-${addr}`} contractAddr={addr} />
         ))}
       </Flex>
       <ButtonGroup colorScheme="blue" variant="outline" spacing="6">

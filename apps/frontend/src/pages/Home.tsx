@@ -14,9 +14,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useLocalStorage } from "usehooks-ts";
 import { usePublicClient } from "../hooks/usePublicClient";
 
-// QUESTION: how do you package and deploy the contract artifact from hardhat package?
-//   L NX> check how dark forest handle this.
-import battleshipArtifact from "../../../hardhat/artifacts/contracts/Battleship.sol/Battleship.json";
+import { battleshipArtifact } from "../helpers";
 
 interface WalletInfo {
   address: string;
@@ -54,8 +52,6 @@ async function deployBattleshipGame(
     nonce: BigInt(tx.nonce),
   });
 
-  console.log("Battleship contract addr:", contractAddr);
-
   // save the contractAddr in localStorage
   setCreatedGames((prev: Array<string>) => [...prev, contractAddr]);
 
@@ -72,9 +68,10 @@ function GameStart() {
   const { selectedNetworkId } = useWeb3ModalState();
   const publicClient = usePublicClient(selectedNetworkId);
   const navigate = useNavigate();
-  const [createdGames, setCreatedGames] = useLocalStorage("created-games", []);
-
-  console.log("createdGames:", createdGames);
+  const [createdGames, setCreatedGames, forgetCreatedGames] = useLocalStorage(
+    "created-games",
+    []
+  );
 
   useEffect(() => {
     if (result.data && selectedNetworkId) {
@@ -121,6 +118,9 @@ function GameStart() {
           Join Game
         </Button>
       </ButtonGroup>
+      {import.meta.env.DEV && (
+        <Button onClick={forgetCreatedGames}>Forget Games</Button>
+      )}
     </Flex>
   );
 }

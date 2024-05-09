@@ -1,4 +1,4 @@
-import { useEffect, useContext, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Flex,
   Text,
@@ -10,14 +10,11 @@ import {
 import { useWalletInfo, useWeb3ModalState } from "@web3modal/wagmi/react";
 import { useAccount, useWalletClient } from "wagmi";
 import { getContractAddress, WalletClient, PublicClient } from "viem";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useLocalStorage } from "usehooks-ts";
+import { usePublicClient } from "../hooks/usePublicClient";
 
-import { PublicClientsContext } from "../components/Web3ModalProvider";
-
-// QUESTION: how do you package and deploy the contract artifact from hardhat package?
-//   L NX> check how dark forest handle this.
-import battleshipArtifact from "../../../hardhat/artifacts/contracts/Battleship.sol/Battleship.json";
+import { battleshipArtifact } from "../helpers";
 
 interface WalletInfo {
   address: string;
@@ -55,8 +52,6 @@ async function deployBattleshipGame(
     nonce: BigInt(tx.nonce),
   });
 
-  console.log("Battleship contract addr:", contractAddr);
-
   // save the contractAddr in localStorage
   setCreatedGames((prev: Array<string>) => [...prev, contractAddr]);
 
@@ -71,34 +66,45 @@ function GameStart() {
   const result = useWalletClient();
   const { address } = useAccount();
   const { selectedNetworkId } = useWeb3ModalState();
+  const publicClient = usePublicClient(selectedNetworkId);
   const navigate = useNavigate();
-  const pcs = useContext(PublicClientsContext);
-  const [createdGames, setCreatedGames] = useLocalStorage("created-games", []);
-
-  console.log("createdGames:", createdGames);
+  const [createdGames, setCreatedGames, forgetCreatedGames] = useLocalStorage(
+    "created-games",
+    []
+  );
 
   useEffect(() => {
     if (result.data && selectedNetworkId) {
       setWalletInfo({
         address: address as string,
         walletClient: result.data,
-        publicClient: pcs[parseInt(selectedNetworkId)],
+        publicClient,
       });
     }
-  }, [result.data, address, pcs, selectedNetworkId]);
+  }, [result.data, address, publicClient, selectedNetworkId]);
 
   return result.isError ? (
     <h1>Wallet fetching Error</h1>
   ) : result.isPending ? (
     <h1>Loading...</h1>
   ) : (
-    <Flex direction="column">
-      <Flex>
+    <Flex direction="column" gap={10}>
+      <Flex direction="column" gap={5}>
         {createdGames.map((addr) => (
-          <GameCard contractAddr={addr} />
+          <GameCard
+            id={`gameCard-${addr}`}
+            key={`gameCard-${addr}`}
+            contractAddr={addr}
+          />
         ))}
       </Flex>
-      <ButtonGroup colorScheme="blue" variant="outline" spacing="6">
+      <ButtonGroup
+        display="flex"
+        justifyContent="space-between"
+        colorScheme="blue"
+        variant="outline"
+        spacing="6"
+      >
         <Button
           height="5em"
           width="10em"
@@ -112,17 +118,22 @@ function GameStart() {
           Join Game
         </Button>
       </ButtonGroup>
+      {import.meta.env.DEV && (
+        <Button onClick={forgetCreatedGames}>Forget Games</Button>
+      )}
     </Flex>
   );
 }
 
 function GameCard({ contractAddr }) {
   return (
-    <Card>
-      <CardBody>
-        <Text>{contractAddr}</Text>
-      </CardBody>
-    </Card>
+    <Link to={`/game/${contractAddr}`}>
+      <Card>
+        <CardBody>
+          <Text>{contractAddr}</Text>
+        </CardBody>
+      </Card>
+    </Link>
   );
 }
 

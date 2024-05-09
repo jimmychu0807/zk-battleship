@@ -50,9 +50,7 @@ export function Web3ModalProvider({ children }: Props) {
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <PublicClientProvider chains={chains}>
-          {children}
-        </PublicClientProvider>
+        <PublicClientProvider chains={chains}>{children}</PublicClientProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );

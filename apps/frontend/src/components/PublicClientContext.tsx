@@ -1,7 +1,7 @@
-import { createContext, useContext } from "react";
+import { createContext } from "react";
 import { createPublicClient, http, PublicClient } from "viem";
 
-const PublicClientContext = createContext(null);
+export const PublicClientContext = createContext(null);
 
 export function PublicClientProvider({ children, chains }) {
   // Create public clients used in viem
@@ -17,15 +17,9 @@ export function PublicClientProvider({ children, chains }) {
     {}
   );
 
-  return <PublicClientContext.Provider value={ publicClients }>
-    { children }
-  </PublicClientContext.Provider>
-}
-
-export function usePublicClient(networkId: number) {
-  const pcs = useContext(PublicClientContext);
-  const pc = pcs[networkId];
-
-  if (!pc) throw new Error("Undefined public client");
-  return pc;
+  return (
+    <PublicClientContext.Provider value={publicClients}>
+      {children}
+    </PublicClientContext.Provider>
+  );
 }

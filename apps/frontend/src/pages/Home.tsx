@@ -1,4 +1,4 @@
-import { useEffect, useContext, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Flex,
   Text,
@@ -10,9 +10,9 @@ import {
 import { useWalletInfo, useWeb3ModalState } from "@web3modal/wagmi/react";
 import { useAccount, useWalletClient } from "wagmi";
 import { getContractAddress, WalletClient, PublicClient } from "viem";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useLocalStorage } from "usehooks-ts";
-import { usePublicClient } from "../components/PublicClientContext";
+import { usePublicClient } from "../hooks/usePublicClient";
 
 // QUESTION: how do you package and deploy the contract artifact from hardhat package?
 //   L NX> check how dark forest handle this.
@@ -91,13 +91,23 @@ function GameStart() {
   ) : result.isPending ? (
     <h1>Loading...</h1>
   ) : (
-    <Flex direction="column">
-      <Flex direction="column">
+    <Flex direction="column" gap={10}>
+      <Flex direction="column" gap={5}>
         {createdGames.map((addr) => (
-          <GameCard id={`gameCard-${addr}`} key={`gameCard-${addr}`} contractAddr={addr} />
+          <GameCard
+            id={`gameCard-${addr}`}
+            key={`gameCard-${addr}`}
+            contractAddr={addr}
+          />
         ))}
       </Flex>
-      <ButtonGroup colorScheme="blue" variant="outline" spacing="6">
+      <ButtonGroup
+        display="flex"
+        justifyContent="space-between"
+        colorScheme="blue"
+        variant="outline"
+        spacing="6"
+      >
         <Button
           height="5em"
           width="10em"
@@ -117,11 +127,13 @@ function GameStart() {
 
 function GameCard({ contractAddr }) {
   return (
-    <Card>
-      <CardBody>
-        <Text>{contractAddr}</Text>
-      </CardBody>
-    </Card>
+    <Link to={`/game/${contractAddr}`}>
+      <Card>
+        <CardBody>
+          <Text>{contractAddr}</Text>
+        </CardBody>
+      </Card>
+    </Link>
   );
 }
 

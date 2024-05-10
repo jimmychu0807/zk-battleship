@@ -7,8 +7,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "fmt": "prettier -w .",
-    "lint": "eslint --fix .",
+    "fmt": "prettier -w . && eslint --fix .",
     "prepare": "husky install",
     "test": "pnpm -r test",
     "validate": "pnpm -r validate && prettier -c . && eslint ."

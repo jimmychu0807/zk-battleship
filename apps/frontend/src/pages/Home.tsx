@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Flex,
   Text,
@@ -6,12 +6,20 @@ import {
   Button,
   Card,
   CardBody,
+  FormControl,
+  FormLabel,
+  Input,
 } from "@chakra-ui/react";
 import { useWalletInfo, useWeb3ModalState } from "@web3modal/wagmi/react";
-import { useAccount, useWalletClient } from "wagmi";
+import {
+  useAccount,
+  useWalletClient,
+  useWriteContract,
+  useWaitForTransactionReceipt,
+} from "wagmi";
 import { getContractAddress, WalletClient, PublicClient } from "viem";
 import { useNavigate, Link } from "react-router-dom";
-import { useLocalStorage } from "usehooks-ts";
+import { useLocalStorage, useToggle } from "usehooks-ts";
 import { usePublicClient } from "../hooks/usePublicClient";
 
 import { battleshipArtifact } from "../helpers";
@@ -68,6 +76,7 @@ function GameStart() {
   const { selectedNetworkId } = useWeb3ModalState();
   const publicClient = usePublicClient(selectedNetworkId);
   const navigate = useNavigate();
+  const [showJoinGame, toggleJoinGame] = useToggle(false);
   const [createdGames, setCreatedGames, forgetCreatedGames] = useLocalStorage(
     "created-games",
     []
@@ -114,14 +123,69 @@ function GameStart() {
         >
           Create Game
         </Button>
-        <Button height="5em" width="10em">
+        <Button height="5em" width="10em" onClick={toggleJoinGame}>
           Join Game
         </Button>
       </ButtonGroup>
+      {showJoinGame && <JoinGame />}
+
       {import.meta.env.DEV && (
         <Button onClick={forgetCreatedGames}>Forget Games</Button>
       )}
     </Flex>
+  );
+}
+
+function JoinGame() {
+  const [contractAddr, setContractAddr] = useState("");
+  const { data: txHash, isPending, writeContract } = useWriteContract();
+  const { isLoading, isSuccess } = useWaitForTransactionReceipt({
+    hash: txHash,
+  });
+  const navigate = useNavigate();
+
+  const joinGame = useCallback(() => {
+    writeContract({
+      address: contractAddr,
+      abi: battleshipArtifact.abi,
+      functionName: "p2join",
+      args: [],
+    });
+  }, [contractAddr, writeContract]);
+
+  useEffect(() => {
+    if (contractAddr && txHash && isSuccess) {
+      navigate(`/game/${contractAddr}`);
+    }
+  }, [contractAddr, txHash, isSuccess, navigate]);
+
+  return (
+    <FormControl
+      display="flex"
+      direction="row"
+      justifyContent="space-between"
+      alignItems="flex-end"
+    >
+      <Flex direction="column">
+        <FormLabel>Battleship Contract Address</FormLabel>
+        <Input
+          type="text"
+          value={contractAddr}
+          onChange={(ev) => setContractAddr(ev.target.value)}
+        />
+      </Flex>
+      <Button
+        isLoading={isPending}
+        colorScheme="blue"
+        variant="outline"
+        onClick={joinGame}
+      >
+        Join
+      </Button>
+      {txHash && <Text>tx Hash: {txHash}</Text>}
+      {isLoading && <Text>Waiting for confirmation...</Text>}
+      {isSuccess && <Text>Transaction confirmed.</Text>}
+    </FormControl>
   );
 }
 

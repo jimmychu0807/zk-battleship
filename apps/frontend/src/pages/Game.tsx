@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { Flex, Text } from "@chakra-ui/react";
+import { useEffect, useState, useId } from "react";
+import { useParams, Form } from "react-router-dom";
+import { Flex, Text, Heading, Button, Input } from "@chakra-ui/react";
 import { useConfig, useReadContracts } from "wagmi";
 import { readContracts } from "wagmi/actions";
 import { battleshipArtifact, GameState } from "../helpers";
@@ -64,6 +64,7 @@ function SetupShips({ contractAddr }) {
   });
 
   const [shipInfo, setShipInfo] = useState([]);
+  const formId = useId();
 
   const [totalShips, boardRows, boardCols] = bResult.data || [];
 
@@ -72,20 +73,46 @@ function SetupShips({ contractAddr }) {
       // const shipInfo = ['SHIP_NAMES', 'SHIP_SIZES'];
       if (!totalShips || !totalShips.result || totalShips.result === 0) return;
 
+      const contractInfo = { address, abi };
       const totalShipsVal = totalShips.result;
       const arr = Array(totalShipsVal)
         .fill("")
         .map((_, idx) => idx);
-      const sResult = await readContracts(wagmiConfig, {
+      const shipNames = await readContracts(wagmiConfig, {
         contracts: arr.map((idx) => ({
-          address,
-          abi,
+          ...contractInfo,
           functionName: "SHIP_NAMES",
           args: [idx],
         })),
       });
 
-      setShipInfo(sResult.map((res) => res.result));
+      const arr2 = Array(totalShipsVal)
+        .fill("")
+        .map((_, idx) => [
+          [idx, 0],
+          [idx, 1],
+        ])
+        .flat();
+      const shipSizes = await readContracts(wagmiConfig, {
+        contracts: arr2.map(([idx, rc]) => ({
+          ...contractInfo,
+          functionName: "SHIP_SIZES",
+          args: [idx, rc],
+        })),
+      });
+
+      const shipInfo = shipNames.reduce(
+        (memo, data, idx) => ({
+          ...memo,
+          [data.result]: [
+            shipSizes[idx * 2].result,
+            shipSizes[idx * 2 + 1].result,
+          ],
+        }),
+        {}
+      );
+
+      setShipInfo(shipInfo);
     }
 
     getShipsInfo();
@@ -95,9 +122,36 @@ function SetupShips({ contractAddr }) {
   console.log("shipInfo:", shipInfo);
 
   return (
-    <>
-      <Text>Setup Ships</Text>
-    </>
+    <Flex direction="column">
+      <Heading size="md">Setup Ship Position</Heading>
+      <Form method="post" action={`/game/${contractAddr}/setupShip`}>
+        {Object.entries(shipInfo).map(([shipName, shipSize]) => (
+          <Flex key={`form-${formId}-${shipName}`} my={4}>
+            <span style={{ display: "block", width: "250px" }}>
+              Position of {shipName} ({shipSize[0]} x {shipSize[1]})
+            </span>
+            <span>topLeft:</span>
+            <Input
+              name={`${shipName}-topLeft`}
+              type="text"
+              size="sm"
+              w="12em"
+              mx={3}
+            />
+
+            <span>bottomRight:</span>
+            <Input
+              name={`${shipName}-bottomRight`}
+              type="text"
+              size="sm"
+              w="12em"
+              mx={3}
+            />
+          </Flex>
+        ))}
+        <Button type="submit">Submit</Button>
+      </Form>
+    </Flex>
   );
 }
 

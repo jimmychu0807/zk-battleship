@@ -6,6 +6,7 @@ import {
   sepolia, // Ethereum
   optimismSepolia, // Optimism
   bscTestnet, // BSC Testnet
+  baseSepolia, // Base
 } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -26,7 +27,7 @@ const metadata = {
   icons: [`${project.homepage}/logo/battleship-logo.jpeg`],
 };
 
-const chains = [sepolia, optimismSepolia, bscTestnet];
+const chains = [sepolia, optimismSepolia, bscTestnet, baseSepolia];
 
 // Add the hardhat node devnet
 const isDev = import.meta.env.DEV;

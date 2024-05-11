@@ -106,22 +106,6 @@ describe("Battleship", function () {
       const owner = (await battleship.read.owner()) as string;
       expect(owner).equal(ownerAddr);
     });
-
-    // it("should allow anyone who are not player 1 to join as another player", async () => {
-    //   const { battleship, p1, p2 } = await loadFixture(deployFixture);
-    //   const p2Addr = await p2.getAddress();
-
-    //   await expect(battleship.connect(p1).p2join()).revertedWith(
-    //     /same as player 1/
-    //   );
-
-    //   await expect(battleship.connect(p2).p2join())
-    //     .emit(battleship, "P2Joined")
-    //     .withArgs(p2Addr);
-
-    //   expect(await battleship.p2()).equal(p2Addr);
-    //   expect(await battleship.gameState()).equal(GameState.P2Joined);
-    // });
   });
 
   describe("Can start a game and have another player join", () => {
@@ -144,6 +128,18 @@ describe("Battleship", function () {
         GameState.P1Joined,
       ]);
       expect(nextRoundId).equal(1n);
+    });
+
+    it("another player can join", async () => {
+      const { battleship, p1, p2 } = await loadFixture(deployFixture);
+      const [p1Addr, p2Addr] = [p1.addr, p2.addr];
+
+      const roundId = 0n;
+      await battleship.write.newGame({ account: p1Addr });
+      await battleship.write.p2join([roundId], { account: p2Addr });
+
+      const roundInfo = await battleship.read.getRoundInfo([roundId]);
+      expect(roundInfo).deep.equal([p1Addr, p2Addr, GameState.P2Joined]);
     });
   });
 

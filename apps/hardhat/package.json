@@ -3,15 +3,20 @@
   "version": "0.1.0",
   "license": "MIT",
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@nomicfoundation/hardhat-toolbox-viem": "^3.0.0",
+    "@nomicfoundation/hardhat-viem": "^2.0.1",
+    "@openzeppelin/contracts": "^5.0.2",
+    "@types/chai": "^4.3.16",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "20.12.11",
     "hardhat": "^2.22.3",
-    "snarkjs": "^0.7.0"
+    "viem": "2.x"
   },
   "engine": {
     "node": ">=20"
   },
   "scripts": {
-    "clean": "hardhat clean",
+    "clean": "hardhat clean && rm -rf typechain-types",
     "dev": "hardhat node",
     "compile": "hardhat --typecheck compile",
     "test": "pnpm compile && hardhat --typecheck test",

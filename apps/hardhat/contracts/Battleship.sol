@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "hardhat/console.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Battleship {
+contract Battleship is Ownable {
   struct ShipType {
     string name;
     uint8[2] size;
   }
-  ShipType[] public shipType;
+  ShipType[] public shipTypes;
 
   uint8[2] public boardSize = [9, 9];
 
@@ -18,23 +18,8 @@ contract Battleship {
     uint8[2] bottomRight;
     bool alive;
   }
-  // p1 and p2 addr, only they can send the missile
-  address public p1;
-  address public p2;
-  // p1 & p2 attack history list
-  mapping(address => uint8[2][]) public moves;
-  // p1 & p2 ship setup configuration
-  mapping(address => Ship[]) public ships;
 
-  // Event declaration
-  event P2Joined(address indexed sender);
-  event SetupShip(address indexed sender, uint8 shipId);
-  event GameStart();
-  event PlayerMove(address indexed sender, uint8[2] hitRC, GameState gameState);
-  event Hit(address indexed opponent);
-  event SinkShip(address indexed opponent, uint8 shipIdx);
-
-  // game state: gameSetup, player1Move, player2Move, player1Win, player2Win.
+  // game state
   enum GameState {
     P1Joined,
     P2Joined,
@@ -43,76 +28,110 @@ contract Battleship {
     P1Won,
     P2Won
   }
-  GameState public gameState;
 
-  modifier AnyPlayer() {
-    require(msg.sender == p1 || msg.sender == p2, "Not one of the game players");
+  struct GameRound {
+    // p1 and p2 addr, only they can send the missile
+    address p1;
+    address p2;
+
+    // p1 & p2 attack history list
+    mapping(address => uint8[2][]) moves;
+    // p1 & p2 ship setup configuration
+    mapping(address => Ship[]) ships;
+    GameState state;
+  }
+  GameRound[] public rounds;
+  uint nextRoundId = 0;
+
+  // Event declaration
+  event NewGame(uint indexed roundId, address indexed sender);
+  event P2Joined(uint indexed roundId, address indexed sender);
+  event SetupShip(uint indexed roundId, address indexed sender, uint8 shipId);
+  event GameStart(uint indexed roundId);
+  event PlayerMove(uint indexed roundId, address indexed sender, uint8[2] hitRC, GameState gameState);
+  event Hit(uint indexed roundId, address indexed opponent);
+  event SinkShip(uint indexed roundId, address indexed opponent, uint8 shipIdx);
+
+  modifier onlyPlayers(uint roundId) {
+    GameRound memory round = rounds[roundId];
+    require(msg.sender == round.p1 || msg.sender == round.p2, "Not one of the game players");
     _;
   }
 
-  modifier P1JoinedState() {
-    require(gameState == GameState.P1Joined, "Game not in P1Joined state");
+  modifier allowedState(uint roundId, GameState targetS) {
+    require(rounds[roundId].state == targetS, "The game is not in its target state");
     _;
   }
 
-  modifier P2JoinedState() {
-    require(gameState == GameState.P2Joined, "Game not in P2Joined state");
-    _;
-  }
-
-  modifier PlayerToMove() {
+  modifier PlayerToMove(uint roundId) {
+    GameRound memory round = rounds[roundId];
     require(
-      gameState == GameState.P1Move || gameState == GameState.P2Move,
+      round.state == GameState.P1Move || round.state == GameState.P2Move,
       "Current game doesn't allow either players to move"
     );
-    if (gameState == GameState.P1Move) {
-      require(p1 == msg.sender, "Expecting player 1 to move");
+    if (round.state == GameState.P1Move) {
+      require(round.p1 == msg.sender, "Expecting player 1 to move");
     }
-    if (gameState == GameState.P2Move) {
-      require(p2 == msg.sender, "Expecting player 2 to move");
+    if (round.state == GameState.P2Move) {
+      require(round.p2 == msg.sender, "Expecting player 2 to move");
     }
     _;
   }
 
   constructor() {
-    // Initialize ShipsInfo
-    shipType.push(ShipType("Submarine", [1, 2]));
-    shipType.push(ShipType("Cruiser", [1, 3]));
-    shipType.push(ShipType("Destroyer", [1, 4]));
-    shipType.push(ShipType("Battleship", [1, 5]));
-    shipType.push(ShipType("Carrier", [2, 5]));
-
-    p1 = msg.sender;
-    gameState = GameState.P1Joined;
+    // Initialize ship types
+    shipTypes.push(ShipType("Submarine", [1, 2]));
+    shipTypes.push(ShipType("Cruiser", [1, 3]));
+    shipTypes.push(ShipType("Destroyer", [1, 4]));
+    shipTypes.push(ShipType("Battleship", [1, 5]));
+    shipTypes.push(ShipType("Carrier", [2, 5]));
   }
 
-  function getShipType() public view returns(ShipType[] memory) {
-    return shipType;
+  function getShipTypes() public view returns(ShipType[] memory) {
+    return shipTypes;
   }
 
   function getShipTypeNum() public view returns(uint8) {
-    return uint8(shipType.length);
+    return uint8(shipTypes.length);
   }
 
   function getBoardSize() public view returns(uint8[2] memory) {
     return boardSize;
   }
 
-  function p2join() public P1JoinedState {
-    require(p1 != msg.sender, "Cannot be the same as player 1");
-    p2 = msg.sender;
-    gameState = GameState.P2Joined;
+  function newGame() public {
+    rounds.push(GameRound({
+      p1: msg.sender,
+      p2: address(0),
+      state: GameState.P1Joined
+    }));
 
-    emit P2Joined(msg.sender);
+    emit NewGame(nextRoundId, msg.sender);
+
+    nextRoundId++;
+  }
+
+  function getGameRounds() public view returns(GameRound[] memory) {
+    return rounds;
+  }
+
+  function p2join(uint roundId) public allowedState(roundId, GameState.P1Joined) {
+    GameRound storage round = rounds[roundId];
+    require(round.p1 != msg.sender, "Cannot be the same as player 1");
+    round.p2 = msg.sender;
+    round.state = GameState.P2Joined;
+
+    emit P2Joined(roundId, msg.sender);
   }
 
   function setupShips(
+    uint roundId,
     uint8 shipId,
     uint8[2] memory topLeft,
     uint8[2] memory bottomRight
   ) public
-    P2JoinedState
-    AnyPlayer
+    allowedState(roundId, GameState.P2Joined)
+    onlyPlayers(roundId)
   {
     require(shipId < getShipTypeNum(), "shipId is out of bound");
     // validate the ship topLeft and bottomRight coordinates are correct
@@ -121,7 +140,7 @@ contract Battleship {
     require (bottomRight[0] < boardSize[0], "ship is placed out of bound (on row)");
     require (bottomRight[1] < boardSize[1], "ship is placed out of bound (on column)");
 
-    uint8[2] storage shipSize = shipType[shipId].size;
+    uint8[2] storage shipSize = shipTypes[shipId].size;
     uint8 rowSize = bottomRight[0] - topLeft[0] + 1;
     uint8 colSize = bottomRight[1] - topLeft[1] + 1;
 
@@ -132,7 +151,7 @@ contract Battleship {
     );
 
     // retrieve the appropriate ship
-    Ship[] storage playerShips = ships[msg.sender];
+    Ship[] storage playerShips = rounds[roundId].ships[msg.sender];
 
     if (playerShips.length == 0) {
       // create empty ships for the player
@@ -154,23 +173,29 @@ contract Battleship {
     playerShips[shipId].bottomRight = bottomRight;
     playerShips[shipId].alive = true;
 
-    emit SetupShip(msg.sender, shipId);
+    emit SetupShip(roundId, msg.sender, shipId);
   }
 
-  function startGame() public P2JoinedState {
-    require(ships[p1].length == getShipTypeNum(), "player 1 ships are not properly setup");
-    require(ships[p2].length == getShipTypeNum(), "player 2 ships are not properly setup");
+  function startGame(uint roundId) public allowedState(roundId, GameState.P2Joined) {
+    GameRound storage round = rounds[roundId];
+    address memory p1 = round.p1;
+    address memory p2 = round.p2;
+
+    require(round.ships[p1].length == getShipTypeNum(), "player 1 ships are not properly setup");
+    require(round.ships[p2].length == getShipTypeNum(), "player 2 ships are not properly setup");
 
     // check that p1ships config and p2ships config are properly configured
     for(uint s = 0; s < getShipTypeNum(); s++) {
-      require(ships[p1][s].alive, "player 1 ships are not properly setup");
-      require(ships[p2][s].alive, "player 2 ships are not properly setup");
+      require(round.ships[p1][s].alive, "player 1 ships are not properly setup");
+      require(round.ships[p2][s].alive, "player 2 ships are not properly setup");
     }
 
-    gameState = GameState.P1Move;
+    rounds[roundId].state = GameState.P1Move;
 
-    emit GameStart();
+    emit GameStart(roundId);
   }
+
+  // NX: get up to here
 
   function playerMove(uint8[2] memory hitRC) public PlayerToMove {
     // Logic of adding the move in the corresponding move list

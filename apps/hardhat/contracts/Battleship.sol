@@ -41,9 +41,9 @@ contract Battleship is Ownable {
     GameState state;
   }
   GameRound[] public rounds;
-  uint nextRoundId = 0;
+  uint256 public nextRoundId = 0;
 
-  // Event declaration
+  // Events declaration
   event NewGame(uint indexed roundId, address indexed sender);
   event P2Joined(uint indexed roundId, address indexed sender);
   event SetupShip(uint indexed roundId, address indexed sender, uint8 shipId);
@@ -52,6 +52,9 @@ contract Battleship is Ownable {
   event Hit(uint indexed roundId, address indexed opponent);
   event SinkShip(uint indexed roundId, address indexed opponent, uint8 shipIdx);
 
+  // --- End of events declaration
+
+  // Modifiers declaration
   modifier validRoundId(uint roundId) {
     require(roundId < nextRoundId, "roundId is out of bound");
     _;
@@ -83,15 +86,17 @@ contract Battleship is Ownable {
     _;
   }
 
-  constructor() Ownable(msg.sender) {
+  // --- End of modifiers declaration
+
+  // Constructor
+  constructor(ShipType[] memory _shipTypes) Ownable(msg.sender) {
     // Initialize ship types
-    shipTypes.push(ShipType("Submarine", [1, 2]));
-    shipTypes.push(ShipType("Cruiser", [1, 3]));
-    shipTypes.push(ShipType("Destroyer", [1, 4]));
-    shipTypes.push(ShipType("Battleship", [1, 5]));
-    shipTypes.push(ShipType("Carrier", [2, 5]));
+    for(uint8 i = 0; i < _shipTypes.length; i++) {
+      shipTypes.push(_shipTypes[i]);
+    }
   }
 
+  // Viewer functions declaration
   function getShipTypes() public view returns(ShipType[] memory) {
     return shipTypes;
   }
@@ -102,15 +107,6 @@ contract Battleship is Ownable {
 
   function getBoardSize() public view returns(uint8[2] memory) {
     return boardSize;
-  }
-
-  function newGame() public {
-    GameRound storage round = rounds.push();
-    round.p1 = msg.sender;
-    round.state = GameState.P1Joined;
-    emit NewGame(nextRoundId, msg.sender);
-
-    nextRoundId++;
   }
 
   function getRoundInfo(uint roundId) public view
@@ -133,6 +129,17 @@ contract Battleship is Ownable {
     returns(Ship[] memory)
   {
     return rounds[roundId].ships[p];
+  }
+
+  // --- End of viewer functions declaration
+
+  function newGame() public {
+    GameRound storage round = rounds.push();
+    round.p1 = msg.sender;
+    round.state = GameState.P1Joined;
+    emit NewGame(nextRoundId, msg.sender);
+
+    nextRoundId++;
   }
 
   function p2join(uint roundId) public

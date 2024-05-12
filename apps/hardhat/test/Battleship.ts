@@ -1,4 +1,12 @@
-import { expect, assert } from "chai";
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
+
+// hardhat-chai-matchers doesn't work with hardhat-viem, so we have to setup chai-as-promised
+//   manually. For its usage refer to the doc:
+//   https://www.chaijs.com/plugins/chai-as-promised/
+chai.use(chaiAsPromised);
+const expect = chai.expect;
+
 import hre from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox-viem/network-helpers";
 import { ShipType, shipTypes } from "../ignition/modules/shipTypes";
@@ -74,15 +82,32 @@ describe("Battleship", function () {
     };
   }
 
-  // async function p2JoinedFixture() {
-  //   // @ts-expect-error seems hardhat helpers are not included
-  //   const [p1, p2, p3] = await hre.ethers.getSigners();
-  //   const Battleship = await hre.ethers.getContractFactory("Battleship");
-  //   const battleship = await Battleship.deploy();
+  async function p2JoinedFixture() {
+    const [[p1, p2, p3], publicClient] = await Promise.all([
+      hre.viem.getWalletClients(),
+      hre.viem.getPublicClient(),
+    ]);
 
-  //   await battleship.connect(p2).p2join();
-  //   return { battleship, p1, p2, p3 };
-  // }
+    const [p1Addr, p2Addr] = [p1.account.address, p2.account.address];
+
+    const battleship = await hre.viem.deployContract(
+      "Battleship",
+      [shipTypes],
+      { client: { wallet: p2 } }
+    );
+
+    await battleship.write.newGame({ account: p1Addr });
+    await battleship.write.p2join([0n], { account: p2Addr });
+
+    return {
+      battleship,
+      p1: { wc: p1, addr: getAddress(p1.account.address) },
+      p2: { wc: p2, addr: getAddress(p2.account.address) },
+      p3: { wc: p3, addr: getAddress(p3.account.address) },
+      ownerAddr: getAddress(p2.account.address),
+      publicClient,
+    };
+  }
 
   // async function gameStartFixture() {
   //   // @ts-expect-error seems hardhat helpers are not included
@@ -150,100 +175,125 @@ describe("Battleship", function () {
     });
   });
 
-  // describe("Setup ships", () => {
-  //   it("should not allow another player to setup ships", async () => {
-  //     const { battleship, p3 } = await loadFixture(p2JoinedFixture);
-  //     await expect(
-  //       battleship.connect(p3).setupShips(0, [0, 0], [0, 1])
-  //     ).revertedWith(/Not one of the game players/);
-  //   });
+  describe("Setup ships", () => {
+    it("should not allow non-player to setup ships", async () => {
+      const { battleship, p3 } = await loadFixture(p2JoinedFixture);
 
-  //   it("should not allow setting up ships with invalid parameters", async () => {
-  //     const { battleship, p1 } = await loadFixture(p2JoinedFixture);
+      const { addr: p3Addr } = p3;
+      const roundId = 0n;
+      const shipId = 0;
 
-  //     // shipId out of bound
-  //     const shipId = 0;
-  //     const [totalShips, shipType, boardSize] = await Promise.all([
-  //       battleship.getShipTypeNum(),
-  //       battleship.getShipType(),
-  //       battleship.getBoardSize(),
-  //     ]);
+      const topLeft: [number, number] = [0, 0];
+      const shipSize = shipTypes[shipId].size;
+      const bottomRight: [number, number] = [shipSize[0] - 1, shipSize[1] - 1];
 
-  //     const boardRows = Number(boardSize[0]);
-  //     const boardCols = Number(boardSize[1]);
+      await expect(
+        battleship.write.setupShips([roundId, shipId, topLeft, bottomRight], {
+          account: p3Addr,
+        })
+      ).be.rejectedWith(/Not one of the game players/);
+    });
 
-  //     const topLeft = [0, 0];
-  //     const bottomRight = [
-  //       Number(shipType[shipId].size[0]) - 1,
-  //       Number(shipType[shipId].size[1]) - 1,
-  //     ];
+    it("should not allow setting up ships with invalid parameters", async () => {
+      const { battleship, p1 } = await loadFixture(p2JoinedFixture);
+      const { addr: p1Addr } = p1;
 
-  //     await expect(
-  //       battleship.connect(p1).setupShips(totalShips, topLeft, bottomRight)
-  //     ).revertedWith(/shipId is out of bound/);
+      // shipId out of bound
+      const roundId = 0n;
+      const shipId = 0;
+      const [totalShips, shipTypes, boardSize] = await Promise.all([
+        battleship.read.getShipTypeNum(),
+        battleship.read.getShipTypes(),
+        battleship.read.getBoardSize(),
+      ]);
 
-  //     // topLeft and bottomRight coordinate switched
-  //     await expect(
-  //       battleship.connect(p1).setupShips(shipId, bottomRight, topLeft)
-  //     ).revertedWith(/topLeft .* is greater than bottomRight .*/);
+      const [boardRows, boardCols] = [
+        Number(boardSize[0]),
+        Number(boardSize[1]),
+      ];
+      const topLeft: [number, number] = [0, 0];
+      const bottomRight: [number, number] = [
+        Number(shipTypes[shipId].size[0]) - 1,
+        Number(shipTypes[shipId].size[1]) - 1,
+      ];
 
-  //     // ship placement is out of bound
-  //     await expect(
-  //       battleship
-  //         .connect(p1)
-  //         .setupShips(
-  //           shipId,
-  //           [boardRows - 1, boardCols - 1],
-  //           [boardRows - 1 + bottomRight[0], boardCols - 1 + bottomRight[1]]
-  //         )
-  //     ).revertedWith(/ship is placed out of bound/);
+      await expect(
+        battleship.write.setupShips(
+          [roundId, totalShips, topLeft, bottomRight],
+          {
+            account: p1Addr,
+          }
+        )
+      ).rejectedWith(/shipId is out of bound/);
 
-  //     await expect(
-  //       battleship
-  //         .connect(p1)
-  //         .setupShips(shipId, topLeft, [bottomRight[0], bottomRight[1] + 1])
-  //     ).revertedWith(/ship submitted size doesn't match its expected size/);
-  //   });
+      // topLeft and bottomRight coordinate switched
+      await expect(
+        battleship.write.setupShips([roundId, shipId, bottomRight, topLeft], {
+          account: p1Addr,
+        })
+      ).rejectedWith(/topLeft .* is greater than bottomRight .*/);
 
-  //   it("should allow setting up ships with valid parameters", async () => {
-  //     const { battleship, p2 } = await loadFixture(p2JoinedFixture);
-  //     const shipId = 1;
-  //     const [p2Addr, shipRows, shipCols] = await Promise.all([
-  //       p2.getAddress(),
-  //       battleship.SHIP_SIZES(shipId, 0),
-  //       battleship.SHIP_SIZES(shipId, 1),
-  //     ]);
+      // ship placement is out of bound
+      const oobTopLeft: [number, number] = [boardRows - 1, boardCols - 1];
+      const oobBottomRight: [number, number] = [
+        boardRows - 1 + bottomRight[0],
+        boardCols - 1 + bottomRight[1],
+      ];
 
-  //     const topLeft = [0n, 0n];
-  //     const bottomRight = [shipRows - 1n, shipCols - 1n];
-  //     await expect(
-  //       battleship.connect(p2).setupShips(shipId, topLeft, bottomRight)
-  //     )
-  //       .emit(battleship, "SetupShip")
-  //       .withArgs(p2Addr, shipId);
-  //   });
+      await expect(
+        battleship.write.setupShips(
+          [roundId, shipId, oobTopLeft, oobBottomRight],
+          { account: p1Addr }
+        )
+      ).rejectedWith(/ship is placed out of bound/);
 
-  //   it("should not allow game to start without both players complete setting up ships", async () => {
-  //     const { battleship, p3 } = await loadFixture(p2JoinedFixture);
+      await expect(
+        battleship.write.setupShips(
+          [roundId, shipId, topLeft, [bottomRight[0], bottomRight[1] + 1]],
+          { account: p1Addr }
+        )
+      ).rejectedWith(/ship submitted size doesn't match its expected size/);
+    });
 
-  //     await expect(battleship.connect(p3).startGame()).revertedWith(
-  //       /player .* ships are not properly setup/
-  //     );
-  //   });
+    //   it("should allow setting up ships with valid parameters", async () => {
+    //     const { battleship, p2 } = await loadFixture(p2JoinedFixture);
+    //     const shipId = 1;
+    //     const [p2Addr, shipRows, shipCols] = await Promise.all([
+    //       p2.getAddress(),
+    //       battleship.SHIP_SIZES(shipId, 0),
+    //       battleship.SHIP_SIZES(shipId, 1),
+    //     ]);
 
-  //   it("should allow game to start with both players complete setting up ships", async () => {
-  //     const { battleship, p1, p2 } = await loadFixture(p2JoinedFixture);
+    //     const topLeft = [0n, 0n];
+    //     const bottomRight = [shipRows - 1n, shipCols - 1n];
+    //     await expect(
+    //       battleship.connect(p2).setupShips(shipId, topLeft, bottomRight)
+    //     )
+    //       .emit(battleship, "SetupShip")
+    //       .withArgs(p2Addr, shipId);
+    //   });
 
-  //     await helpers.setupPlayerShips(battleship, p1);
-  //     await helpers.setupPlayerShips(battleship, p2);
-  //     await expect(battleship.connect(p1).startGame()).emit(
-  //       battleship,
-  //       "GameStart"
-  //     );
+    //   it("should not allow game to start without both players complete setting up ships", async () => {
+    //     const { battleship, p3 } = await loadFixture(p2JoinedFixture);
 
-  //     expect(await battleship.gameState()).to.equal(GameState.P1Move);
-  //   });
-  // });
+    //     await expect(battleship.connect(p3).startGame()).revertedWith(
+    //       /player .* ships are not properly setup/
+    //     );
+    //   });
+
+    //   it("should allow game to start with both players complete setting up ships", async () => {
+    //     const { battleship, p1, p2 } = await loadFixture(p2JoinedFixture);
+
+    //     await helpers.setupPlayerShips(battleship, p1);
+    //     await helpers.setupPlayerShips(battleship, p2);
+    //     await expect(battleship.connect(p1).startGame()).emit(
+    //       battleship,
+    //       "GameStart"
+    //     );
+
+    //     expect(await battleship.gameState()).to.equal(GameState.P1Move);
+    //   });
+  });
 
   // describe("Player moves", () => {
   //   it("should reject moves that are out of bound", async () => {

@@ -128,12 +128,18 @@ importers:
       '@types/chai':
         specifier: ^4.3.16
         version: 4.3.16
+      '@types/chai-as-promised':
+        specifier: ^7.1.8
+        version: 7.1.8
       '@types/mocha':
         specifier: ^10.0.6
         version: 10.0.6
       '@types/node':
         specifier: 20.12.11
         version: 20.12.11
+      chai-as-promised:
+        specifier: ^7.1.2
+        version: 7.1.2(chai@4.4.1)
       hardhat:
         specifier: ^2.22.3
         version: 2.22.3(bufferutil@4.0.8)(ts-node@10.9.2(@swc/core@1.5.3)(@types/node@20.12.11)(typescript@5.4.5))(typescript@5.4.5)(utf-8-validate@6.0.3)
@@ -3429,10 +3435,10 @@ packages:
     resolution: {integrity: sha512-JPypkxsB10s9QOWwa6zwPzqE1Md3vqpPc+cai4sAecuCsRyAtAl/pMyhPlMbT/xtPnm2dznJZYRLui57qiRhaQ==}
     engines: {node: '>=16'}
 
-  chai-as-promised@7.1.1:
-    resolution: {integrity: sha512-azL6xMoi+uxu6z4rhWQ1jbdUhOMhis2PvscD/xjLqNMkv3BPPp2JyyuTHOrf9BOosGpNQ11v6BKv/g57RXbiaA==}
+  chai-as-promised@7.1.2:
+    resolution: {integrity: sha512-aBDHZxRzYnUYuIAIPBH2s511DjlKPzXNlXSGFC8CwmroWQLfrW0LtE1nK3MAwwNhJPa9raEjNCmRoFpG0Hurdw==}
     peerDependencies:
-      chai: '>= 2.1.2 < 5'
+      chai: '>= 2.1.2 < 6'
 
   chai@4.4.1:
     resolution: {integrity: sha512-13sOfMv2+DWduEU+/xbun3LScLoqN17nBeTLUsmDfKdoiC1fr0n9PU4guu4AhRcOVFk/sW8LyZWHuhWtQZiF+g==}
@@ -9599,7 +9605,7 @@ snapshots:
       '@types/mocha': 10.0.6
       '@types/node': 20.12.11
       chai: 4.4.1
-      chai-as-promised: 7.1.1(chai@4.4.1)
+      chai-as-promised: 7.1.2(chai@4.4.1)
       hardhat: 2.22.3(bufferutil@4.0.8)(ts-node@10.9.2(@swc/core@1.5.3)(@types/node@20.12.11)(typescript@5.4.5))(typescript@5.4.5)(utf-8-validate@6.0.3)
       hardhat-gas-reporter: 1.0.10(bufferutil@4.0.8)(hardhat@2.22.3(bufferutil@4.0.8)(ts-node@10.9.2(@swc/core@1.5.3)(@types/node@20.12.11)(typescript@5.4.5))(typescript@5.4.5)(utf-8-validate@6.0.3))(utf-8-validate@6.0.3)
       solidity-coverage: 0.8.12(hardhat@2.22.3(bufferutil@4.0.8)(ts-node@10.9.2(@swc/core@1.5.3)(@types/node@20.12.11)(typescript@5.4.5))(typescript@5.4.5)(utf-8-validate@6.0.3))
@@ -11450,7 +11456,7 @@ snapshots:
     dependencies:
       nofilter: 3.1.0
 
-  chai-as-promised@7.1.1(chai@4.4.1):
+  chai-as-promised@7.1.2(chai@4.4.1):
     dependencies:
       chai: 4.4.1
       check-error: 1.0.3

@@ -174,17 +174,17 @@ describe("Battleship", function () {
 
       // prettier-ignore
       const [roundInfo, nextRoundId] = await Promise.all([
-        battleship.read.getRoundInfo([0n]),
+        battleship.read.getRound([0n]),
         battleship.read.nextRoundId(),
       ]);
 
-      expect(roundInfo).include.ordered.members([
-        p1Addr,
-        helpers.zeroAddr,
-        GameState.P1Joined,
-      ]);
-      expect(roundInfo[4] === roundInfo[3]).true;
-      expect(roundInfo[5]).equal(0n);
+      expect(roundInfo).include({
+        p1: p1Addr,
+        p2: helpers.zeroAddr,
+        state: GameState.P1Joined,
+      });
+      expect(roundInfo.startTime).equal(roundInfo.lastUpdate);
+      expect(roundInfo.endTime).equal(0n);
       expect(nextRoundId).equal(1n);
     });
 
@@ -196,14 +196,14 @@ describe("Battleship", function () {
       await battleship.write.newGame({ account: p1Addr });
       await battleship.write.p2join([roundId], { account: p2Addr });
 
-      const roundInfo = await battleship.read.getRoundInfo([roundId]);
-      expect(roundInfo).include.ordered.members([
-        p1Addr,
-        p2Addr,
-        GameState.P2Joined,
-      ]);
-      expect(roundInfo[4] > roundInfo[3]).true;
-      expect(roundInfo[5]).equal(0n);
+      const roundInfo = await battleship.read.getRound([roundId]);
+      expect(roundInfo).include({
+        p1: p1Addr,
+        p2: p2Addr,
+        state: GameState.P2Joined,
+      });
+      expect(roundInfo.lastUpdate > roundInfo.startTime).true;
+      expect(roundInfo.endTime).equal(0n);
     });
   });
 
@@ -335,12 +335,12 @@ describe("Battleship", function () {
       const hash = await battleship.write.startGame([roundId], { account: p1Addr });
       helpers.expectEvent(battleship, hash, "GameStart", { roundId });
 
-      const roundInfo = await battleship.read.getRoundInfo([roundId]);
-      expect(roundInfo).to.include.ordered.members([
-        p1Addr,
-        p2Addr,
-        GameState.P1Move,
-      ]);
+      const roundInfo = await battleship.read.getRound([roundId]);
+      expect(roundInfo).to.include({
+        p1: p1Addr,
+        p2: p2Addr,
+        state: GameState.P1Move,
+      });
     });
   });
 
@@ -372,11 +372,11 @@ describe("Battleship", function () {
 
       // Check the game state, move list, and event
       const [roundInfo, moves] = await Promise.all([
-        battleship.read.getRoundInfo([roundId]),
+        battleship.read.getRound([roundId]),
         battleship.read.getRoundMoves([roundId, account]),
       ]);
 
-      expect(roundInfo[2]).equal(GameState.P2Move);
+      expect(roundInfo.state).equal(GameState.P2Move);
       expect(moves).deep.equal([move]);
       // prettier-ignore
       helpers.expectEvent(

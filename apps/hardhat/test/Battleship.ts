@@ -418,114 +418,114 @@ describe("Battleship", function () {
       expect(ships[1].body).equal(3n);
     });
 
-    //   it("should be able to sink a ship", async () => {
-    //     const { battleship, p1, p2 } = await loadFixture(gameStartFixture);
-    //     const p1Battleship = battleship.connect(p1);
-    //     const [p2Addr, bRows, bCols] = await Promise.all([
-    //       p2.getAddress(),
-    //       p1Battleship.BOARD_ROWS(),
-    //       p1Battleship.BOARD_COLS(),
-    //     ]);
+    // it("should be able to sink a ship", async () => {
+    //   const { battleship, p1, p2 } = await loadFixture(gameStartFixture);
+    //   const p1Battleship = battleship.connect(p1);
+    //   const [p2Addr, bRows, bCols] = await Promise.all([
+    //     p2.getAddress(),
+    //     p1Battleship.BOARD_ROWS(),
+    //     p1Battleship.BOARD_COLS(),
+    //   ]);
 
-    //     // Hit two spots of the cruiser
-    //     // prettier-ignore
-    //     await helpers.playerMove(
-    //       battleship,
-    //       p1, [[1n, 0n], [1n, 2n]],
-    //       p2, Array(2).fill([bRows - 1n, bCols - 1n])
-    //     );
-    //     // Check the ship state
-    //     let sub = await p1Battleship.ships(p2Addr, 1);
-    //     expect(sub).to.deep.equal([2n, true]); // the body should be encoded as `010`.`
+    //   // Hit two spots of the cruiser
+    //   // prettier-ignore
+    //   await helpers.playerMove(
+    //     battleship,
+    //     p1, [[1n, 0n], [1n, 2n]],
+    //     p2, Array(2).fill([bRows - 1n, bCols - 1n])
+    //   );
+    //   // Check the ship state
+    //   let sub = await p1Battleship.ships(p2Addr, 1);
+    //   expect(sub).to.deep.equal([2n, true]); // the body should be encoded as `010`.`
 
-    //     // Hit the last spot of the cruiser
-    //     // prettier-ignore
-    //     await helpers.playerMove(
-    //       battleship,
-    //       p1, [[1n, 1n]],
-    //       p2, [[bRows - 1n, bCols - 1n]]
-    //     );
+    //   // Hit the last spot of the cruiser
+    //   // prettier-ignore
+    //   await helpers.playerMove(
+    //     battleship,
+    //     p1, [[1n, 1n]],
+    //     p2, [[bRows - 1n, bCols - 1n]]
+    //   );
 
-    //     // query events in the last two blocks
-    //     const events = await battleship.queryFilter("*", -1);
-    //     expect(events.length).to.equal(3);
-    //     const ev = events.find((ev) => ev.eventName === "SinkShip");
-    //     expect(ev!.args).deep.equal([p2Addr, 1]); // 1 is the ID of Cruiser. Refer to SHIP_NAMES.
+    //   // query events in the last two blocks
+    //   const events = await battleship.queryFilter("*", -1);
+    //   expect(events.length).to.equal(3);
+    //   const ev = events.find((ev) => ev.eventName === "SinkShip");
+    //   expect(ev!.args).deep.equal([p2Addr, 1]); // 1 is the ID of Cruiser. Refer to SHIP_NAMES.
 
-    //     // Check the ship state
-    //     sub = await p1Battleship.ships(p2Addr, 1);
-    //     expect(sub).to.deep.equal([0n, false]);
-    //   });
+    //   // Check the ship state
+    //   sub = await p1Battleship.ships(p2Addr, 1);
+    //   expect(sub).to.deep.equal([0n, false]);
+    // });
 
-    //   it("should end a game when all ships are sunk", async () => {
-    //     const { battleship, p1, p2 } = await loadFixture(gameStartFixture);
-    //     const [p1Addr, p2Addr, bRows, bCols] = await Promise.all([
-    //       p1.getAddress(),
-    //       p2.getAddress(),
-    //       battleship.BOARD_ROWS(),
-    //       battleship.BOARD_COLS(),
-    //     ]);
+    // it("should end a game when all ships are sunk", async () => {
+    //   const { battleship, p1, p2 } = await loadFixture(gameStartFixture);
+    //   const [p1Addr, p2Addr, bRows, bCols] = await Promise.all([
+    //     p1.getAddress(),
+    //     p2.getAddress(),
+    //     battleship.BOARD_ROWS(),
+    //     battleship.BOARD_COLS(),
+    //   ]);
 
-    //     // Hit p2 Submarine
-    //     // prettier-ignore
-    //     await helpers.playerMove(
-    //       battleship,
-    //       p1, [[0n, 0n], [0n, 1n]],
-    //       p2, Array(2).fill([bRows - 1n, bCols - 1n])
-    //     );
+    //   // Hit p2 Submarine
+    //   // prettier-ignore
+    //   await helpers.playerMove(
+    //     battleship,
+    //     p1, [[0n, 0n], [0n, 1n]],
+    //     p2, Array(2).fill([bRows - 1n, bCols - 1n])
+    //   );
 
-    //     let ship = await battleship.ships(p2Addr, 0);
-    //     expect(ship).to.deep.equal([0n, false]);
+    //   let ship = await battleship.ships(p2Addr, 0);
+    //   expect(ship).to.deep.equal([0n, false]);
 
-    //     // Hit p2 Cruiser
-    //     // prettier-ignore
-    //     await helpers.playerMove(
-    //       battleship,
-    //       p1, [[1n, 0n], [1n, 1n], [1n, 2n]],
-    //       p2, Array(3).fill([bRows - 1n, bCols - 1n])
-    //     );
+    //   // Hit p2 Cruiser
+    //   // prettier-ignore
+    //   await helpers.playerMove(
+    //     battleship,
+    //     p1, [[1n, 0n], [1n, 1n], [1n, 2n]],
+    //     p2, Array(3).fill([bRows - 1n, bCols - 1n])
+    //   );
 
-    //     ship = await battleship.ships(p2Addr, 1);
-    //     expect(ship).to.deep.equal([0n, false]);
+    //   ship = await battleship.ships(p2Addr, 1);
+    //   expect(ship).to.deep.equal([0n, false]);
 
-    //     // Hit p2 Battleship
-    //     // prettier-ignore
-    //     await helpers.playerMove(
-    //       battleship,
-    //       p1, [[2n, 0n], [2n, 1n], [2n, 2n], [2n, 3n]],
-    //       p2, Array(4).fill([bRows - 1n, bCols - 1n])
-    //     );
+    //   // Hit p2 Battleship
+    //   // prettier-ignore
+    //   await helpers.playerMove(
+    //     battleship,
+    //     p1, [[2n, 0n], [2n, 1n], [2n, 2n], [2n, 3n]],
+    //     p2, Array(4).fill([bRows - 1n, bCols - 1n])
+    //   );
 
-    //     ship = await battleship.ships(p2Addr, 2);
-    //     expect(ship).to.deep.equal([0n, false]);
+    //   ship = await battleship.ships(p2Addr, 2);
+    //   expect(ship).to.deep.equal([0n, false]);
 
-    //     // Hit p2 Carrier
-    //     // prettier-ignore
-    //     await helpers.playerMove(
-    //       battleship,
-    //       p1, [
-    //         [3n, 0n], [3n, 1n], [3n, 2n], [3n, 3n],
-    //         [4n, 0n], [4n, 1n], [4n, 2n],
-    //       ],
-    //       p2, Array(7).fill([bRows - 1n, bCols - 1n])
-    //     );
+    //   // Hit p2 Carrier
+    //   // prettier-ignore
+    //   await helpers.playerMove(
+    //     battleship,
+    //     p1, [
+    //       [3n, 0n], [3n, 1n], [3n, 2n], [3n, 3n],
+    //       [4n, 0n], [4n, 1n], [4n, 2n],
+    //     ],
+    //     p2, Array(7).fill([bRows - 1n, bCols - 1n])
+    //   );
 
-    //     const p1Battleship = battleship.connect(p1);
-    //     await p1Battleship.playerMove([4n, 3n]);
+    //   const p1Battleship = battleship.connect(p1);
+    //   await p1Battleship.playerMove([4n, 3n]);
 
-    //     ship = await battleship.ships(p2Addr, 2);
-    //     expect(ship).to.deep.equal([0n, false]);
+    //   ship = await battleship.ships(p2Addr, 2);
+    //   expect(ship).to.deep.equal([0n, false]);
 
-    //     // Check that the game should end
-    //     // query events in the last two blocks
-    //     const events = await battleship.queryFilter("*", "latest");
-    //     expect(events.length).equal(2);
+    //   // Check that the game should end
+    //   // query events in the last two blocks
+    //   const events = await battleship.queryFilter("*", "latest");
+    //   expect(events.length).equal(2);
 
-    //     let ev = events.find((ev) => ev.eventName === "SinkShip");
-    //     expect(ev!.args).deep.equal([p2Addr, 3]);
+    //   let ev = events.find((ev) => ev.eventName === "SinkShip");
+    //   expect(ev!.args).deep.equal([p2Addr, 3]);
 
-    //     ev = events.find((ev) => ev.eventName === "PlayerMove");
-    //     expect(ev!.args).deep.equal([p1Addr, [4n, 3n], GameState.P1Won]);
-    //   });
+    //   ev = events.find((ev) => ev.eventName === "PlayerMove");
+    //   expect(ev!.args).deep.equal([p1Addr, [4n, 3n], GameState.P1Won]);
+    // });
   });
 });

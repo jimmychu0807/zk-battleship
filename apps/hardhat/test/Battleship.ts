@@ -9,11 +9,10 @@ const expect = chai.expect;
 
 import hre from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox-viem/network-helpers";
-import { ShipType, shipTypes } from "../ignition/modules/shipTypes";
+import { shipTypes } from "../ignition/modules/shipTypes";
 import { getAddress } from "viem";
 
-type BigNumberish = bigint | number;
-type RoundInfo = [`0x${string}`, `0x${string}`, number, bigint, bigint, bigint];
+// type BigNumberish = bigint | number;
 
 enum GameState {
   P1Joined = 0,
@@ -25,39 +24,46 @@ enum GameState {
 }
 
 const helpers = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async setupPlayerShips(battleship: any, p: any) {
-    // const pBattleship = battleship.connect(p);
-    // await pBattleship.setupShips(0, [0, 0], [0, 1]);
-    // await pBattleship.setupShips(1, [1, 0], [1, 2]);
-    // await pBattleship.setupShips(2, [2, 0], [2, 3]);
-    // await pBattleship.setupShips(3, [3, 0], [4, 3]);
-  },
-
-  async playerMove(
-    battleship: any, // eslint-disable-line @typescript-eslint/no-explicit-any
-    p1: any, // eslint-disable-line @typescript-eslint/no-explicit-any
-    p1Moves: [BigNumberish, BigNumberish][],
-    p2: any, // eslint-disable-line @typescript-eslint/no-explicit-any
-    p2Moves: [BigNumberish, BigNumberish][]
-  ) {
-    // const p1b = battleship.connect(p1);
-    // const p2b = battleship.connect(p2);
-    // assert(
-    //   p1Moves.length === p2Moves.length,
-    //   "p1Moves should equal to p2Moves for this helper method"
-    // );
-    // for (let i = 0; i < p1Moves.length; i++) {
-    //   await p1b.playerMove(p1Moves[i]);
-    //   await p2b.playerMove(p2Moves[i]);
-    // }
-  },
-
-  assertAddrEqual(addr1: string, addr2: string) {
-    return expect(addr1.toUpperCase()).equal(addr2.toUpperCase());
-  },
-
   zeroAddr: "0x0000000000000000000000000000000000000000",
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // async setupPlayerShips(battleship: any, p: any) {
+  //   const pBattleship = battleship.connect(p);
+  //   await pBattleship.setupShips(0, [0, 0], [0, 1]);
+  //   await pBattleship.setupShips(1, [1, 0], [1, 2]);
+  //   await pBattleship.setupShips(2, [2, 0], [2, 3]);
+  //   await pBattleship.setupShips(3, [3, 0], [4, 3]);
+  // },
+
+  // async playerMove(
+  //   battleship: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+  //   p1: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+  //   p1Moves: [BigNumberish, BigNumberish][],
+  //   p2: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+  //   p2Moves: [BigNumberish, BigNumberish][]
+  // ) {
+  //   const p1b = battleship.connect(p1);
+  //   const p2b = battleship.connect(p2);
+  //   assert(
+  //     p1Moves.length === p2Moves.length,
+  //     "p1Moves should equal to p2Moves for this helper method"
+  //   );
+  //   for (let i = 0; i < p1Moves.length; i++) {
+  //     await p1b.playerMove(p1Moves[i]);
+  //     await p2b.playerMove(p2Moves[i]);
+  //   }
+  // },
+
+  async expectEvent(
+    contract: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    hash: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    eventName: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    args: any // eslint-disable-line @typescript-eslint/no-explicit-any
+  ) {
+    const [ev] = await contract.getEvents.call(eventName);
+    expect(hash).to.equal(ev.transactionHash);
+    expect(ev.args).deep.equal(args);
+  },
 };
 
 describe("Battleship", function () {
@@ -135,7 +141,7 @@ describe("Battleship", function () {
   describe("Can start a game and have another player join", () => {
     it("can start a new game", async () => {
       const { battleship, p1 } = await loadFixture(deployFixture);
-      const { wc: p1wc, addr: p1Addr } = p1;
+      const { addr: p1Addr } = p1;
 
       // Call the newGame using p1 account
       await battleship.write.newGame({ account: p1Addr });
@@ -255,47 +261,53 @@ describe("Battleship", function () {
       ).rejectedWith(/ship submitted size doesn't match its expected size/);
     });
 
-      it("should allow setting up ships with valid parameters", async () => {
-        const { battleship, p2 } = await loadFixture(p2JoinedFixture);
-        const shipId = 1;
-        const roundId = 0n;
-        const { addr: p2Addr } = p2;
+    it("should allow setting up ships with valid parameters", async () => {
+      const { battleship, p2 } = await loadFixture(p2JoinedFixture);
+      const shipId = 1;
+      const roundId = 0n;
+      const { addr: p2Addr } = p2;
 
-        const [shipRows, shipCols] = [shipTypes[shipId].size[0], shipTypes[shipId].size[1]];
+      const [shipRows, shipCols] = [
+        shipTypes[shipId].size[0],
+        shipTypes[shipId].size[1],
+      ];
 
-        const topLeft: [number, number] = [0, 0];
-        const bottomRight: [number, number] = [shipRows - 1, shipCols - 1];
-        const hash = await battleship.write.setupShips(
-          [roundId, shipId, topLeft, bottomRight],
-          { account: p2Addr }
-        );
+      const topLeft: [number, number] = [0, 0];
+      const bottomRight: [number, number] = [shipRows - 1, shipCols - 1];
+      const hash = await battleship.write.setupShips(
+        [roundId, shipId, topLeft, bottomRight],
+        { account: p2Addr }
+      );
 
-        console.log("hash:", hash);
-
-        // .emit(battleship, "SetupShip")
-        // .withArgs(p2Addr, shipId);
+      helpers.expectEvent(battleship, hash, "SetupShip", {
+        roundId,
+        sender: p2Addr,
+        shipId,
       });
+    });
 
-    //   it("should not allow game to start without both players complete setting up ships", async () => {
-    //     const { battleship, p3 } = await loadFixture(p2JoinedFixture);
+    it("should not allow game to start without both players complete setting up ships", async () => {
+      const { battleship, p2 } = await loadFixture(p2JoinedFixture);
+      const { addr: p2Addr } = p2;
+      const roundId = 0n;
 
-    //     await expect(battleship.connect(p3).startGame()).revertedWith(
-    //       /player .* ships are not properly setup/
-    //     );
-    //   });
+      await expect(
+        battleship.write.startGame([roundId], { account: p2Addr })
+      ).rejectedWith(/player .* ships are not properly setup/);
+    });
 
-    //   it("should allow game to start with both players complete setting up ships", async () => {
-    //     const { battleship, p1, p2 } = await loadFixture(p2JoinedFixture);
+    // it("should allow game to start with both players complete setting up ships", async () => {
+    //   const { battleship, p1, p2 } = await loadFixture(p2JoinedFixture);
 
-    //     await helpers.setupPlayerShips(battleship, p1);
-    //     await helpers.setupPlayerShips(battleship, p2);
-    //     await expect(battleship.connect(p1).startGame()).emit(
-    //       battleship,
-    //       "GameStart"
-    //     );
+    //   await helpers.setupPlayerShips(battleship, p1);
+    //   await helpers.setupPlayerShips(battleship, p2);
+    //   await expect(battleship.connect(p1).startGame()).emit(
+    //     battleship,
+    //     "GameStart"
+    //   );
 
-    //     expect(await battleship.gameState()).to.equal(GameState.P1Move);
-    //   });
+    //   expect(await battleship.gameState()).to.equal(GameState.P1Move);
+    // });
   });
 
   // describe("Player moves", () => {

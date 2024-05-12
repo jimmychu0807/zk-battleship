@@ -54,7 +54,7 @@ contract Battleship is Ownable {
   event GameStart(uint indexed roundId);
   event PlayerMove(uint indexed roundId, address indexed sender, uint8[2] hitRC, GameState gameState);
   event Hit(uint indexed roundId, address indexed opponent);
-  event SinkShip(uint indexed roundId, address indexed opponent, uint8 shipIdx);
+  event SinkShip(uint indexed roundId, address indexed opponent, uint8 shipId);
 
   // --- End of events declaration
 

@@ -13,7 +13,7 @@ contract Battleship is Ownable {
   uint8[2] public boardSize = [9, 9];
 
   struct Ship {
-    uint256 body;
+    uint64 body;
     uint8[2] topLeft;
     uint8[2] bottomRight;
     bool alive;
@@ -39,9 +39,13 @@ contract Battleship is Ownable {
     // p1 & p2 ship setup configuration
     mapping(address => Ship[]) ships;
     GameState state;
+
+    uint startTime;
+    uint lastUpdate;
+    uint endTime;
   }
   GameRound[] public rounds;
-  uint256 public nextRoundId = 0;
+  uint64 public nextRoundId = 0;
 
   // Events declaration
   event NewGame(uint indexed roundId, address indexed sender);
@@ -55,23 +59,23 @@ contract Battleship is Ownable {
   // --- End of events declaration
 
   // Modifiers declaration
-  modifier validRoundId(uint roundId) {
+  modifier validRoundId(uint64 roundId) {
     require(roundId < nextRoundId, "roundId is out of bound");
     _;
   }
 
-  modifier onlyPlayers(uint roundId) {
+  modifier onlyPlayers(uint64 roundId) {
     GameRound storage round = rounds[roundId];
     require(msg.sender == round.p1 || msg.sender == round.p2, "Not one of the game players");
     _;
   }
 
-  modifier allowedState(uint roundId, GameState targetS) {
+  modifier allowedState(uint64 roundId, GameState targetS) {
     require(rounds[roundId].state == targetS, "The game is not in its target state");
     _;
   }
 
-  modifier playerToMove(uint roundId) {
+  modifier playerToMove(uint64 roundId) {
     GameRound storage round = rounds[roundId];
     require(
       round.state == GameState.P1Move || round.state == GameState.P2Move,
@@ -83,6 +87,15 @@ contract Battleship is Ownable {
     if (round.state == GameState.P2Move) {
       require(round.p2 == msg.sender, "Expecting player 2 to move");
     }
+    _;
+  }
+
+  modifier nonEndState(uint64 roundId) {
+    GameRound storage round = rounds[roundId];
+    require(
+      round.state != GameState.P1Won && round.state != GameState.P2Won,
+      "Current game has ended."
+    );
     _;
   }
 
@@ -109,22 +122,22 @@ contract Battleship is Ownable {
     return boardSize;
   }
 
-  function getRoundInfo(uint roundId) public view
+  function getRoundInfo(uint64 roundId) public view
     validRoundId(roundId)
-    returns(address, address, GameState)
+    returns(address, address, GameState, uint, uint, uint)
   {
     GameRound storage round = rounds[roundId];
-    return (round.p1, round.p2, round.state);
+    return (round.p1, round.p2, round.state, round.startTime, round.lastUpdate, round.endTime);
   }
 
-  function getRoundMoves(uint roundId, address p) public view
+  function getRoundMoves(uint64 roundId, address p) public view
     validRoundId(roundId)
     returns(uint8[2][] memory)
   {
     return rounds[roundId].moves[p];
   }
 
-  function getRoundShips(uint roundId, address p) public view
+  function getRoundShips(uint64 roundId, address p) public view
     validRoundId(roundId)
     returns(Ship[] memory)
   {
@@ -136,26 +149,28 @@ contract Battleship is Ownable {
   function newGame() public {
     GameRound storage round = rounds.push();
     round.p1 = msg.sender;
-    round.state = GameState.P1Joined;
-    emit NewGame(nextRoundId, msg.sender);
+    uint64 currentId = nextRoundId++;
+    updateGameState(currentId, GameState.P1Joined);
 
-    nextRoundId++;
+    emit NewGame(currentId, msg.sender);
+
+
   }
 
-  function p2join(uint roundId) public
+  function p2join(uint64 roundId) public
     validRoundId(roundId)
     allowedState(roundId, GameState.P1Joined)
   {
     GameRound storage round = rounds[roundId];
     require(round.p1 != msg.sender, "Cannot be the same as player 1");
     round.p2 = msg.sender;
-    round.state = GameState.P2Joined;
+    updateGameState(roundId, GameState.P2Joined);
 
     emit P2Joined(roundId, msg.sender);
   }
 
   function setupShips(
-    uint roundId,
+    uint64 roundId,
     uint8 shipId,
     uint8[2] memory topLeft,
     uint8[2] memory bottomRight
@@ -199,7 +214,7 @@ contract Battleship is Ownable {
     // TODO: Check the ship placement doesn't overlapp with other ships
 
     // Fill the ship body with bit of 1
-    playerShips[shipId].body = 2**(shipSize[0] * shipSize[1]) - 1;
+    playerShips[shipId].body = uint64(2**(shipSize[0] * shipSize[1])) - 1;
     playerShips[shipId].topLeft = topLeft;
     playerShips[shipId].bottomRight = bottomRight;
     playerShips[shipId].alive = true;
@@ -207,7 +222,7 @@ contract Battleship is Ownable {
     emit SetupShip(roundId, msg.sender, shipId);
   }
 
-  function startGame(uint roundId) public
+  function startGame(uint64 roundId) public
     validRoundId(roundId)
     allowedState(roundId, GameState.P2Joined)
   {
@@ -224,12 +239,12 @@ contract Battleship is Ownable {
       require(round.ships[p2][s].alive, "player 2 ships are not properly setup");
     }
 
-    rounds[roundId].state = GameState.P1Move;
+    updateGameState(roundId, GameState.P1Move);
 
     emit GameStart(roundId);
   }
 
-  function playerMove(uint roundId, uint8[2] memory hitRC) public
+  function playerMove(uint64 roundId, uint8[2] memory hitRC) public
     validRoundId(roundId)
     playerToMove(roundId)
   {
@@ -255,7 +270,7 @@ contract Battleship is Ownable {
         uint8 rowWidth = ship.bottomRight[1] - ship.topLeft[1] + 1;
         uint8 bodyIdx = (hitRC[0] - ship.topLeft[0]) * rowWidth + (hitRC[1] - ship.topLeft[1]);
         uint8 reverseIdx = (shipTypes[sIdx].size[0] * shipTypes[sIdx].size[1]) - bodyIdx - 1;
-        uint256 mask = ~(1 << reverseIdx);
+        uint64 mask = ~(uint64(1) << reverseIdx);
         ship.body &= mask;
 
         // mark the ship as dead if its body are all hit
@@ -269,15 +284,41 @@ contract Battleship is Ownable {
     }
 
     // Update the game state
-    round.state = isGameEnd(roundId)
-      ? (round.state == GameState.P1Move ? GameState.P1Won : GameState.P2Won)
-      : (round.state == GameState.P1Move ? GameState.P2Move : GameState.P1Move);
+    if (isGameEnd(roundId)) {
+      if (round.state == GameState.P1Move) {
+        updateGameState(roundId, GameState.P1Won);
+      } else {
+        updateGameState(roundId, GameState.P2Won);
+      }
+    } else {
+      if (round.state == GameState.P1Move) {
+        updateGameState(roundId, GameState.P2Move);
+      } else {
+        updateGameState(roundId, GameState.P1Move);
+      }
+    }
 
     // Emit an event
     emit PlayerMove(roundId, msg.sender, hitRC, round.state);
   }
 
-  function isGameEnd(uint roundId) public view
+  function updateGameState(uint64 roundId, GameState state) private
+    validRoundId(roundId)
+    nonEndState(roundId)
+  {
+    GameRound storage round = rounds[roundId];
+    round.state = state;
+
+    // Dealing with time recording
+    round.lastUpdate = block.timestamp;
+    if (state == GameState.P1Joined) {
+      round.startTime = round.lastUpdate;
+    } else if (state == GameState.P1Won || state == GameState.P2Won) {
+      round.endTime = round.lastUpdate;
+    }
+  }
+
+  function isGameEnd(uint64 roundId) private view
     validRoundId(roundId)
     returns (bool)
   {

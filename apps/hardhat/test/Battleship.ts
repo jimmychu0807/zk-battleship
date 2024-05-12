@@ -5,8 +5,7 @@ import { ShipType, shipTypes } from "../ignition/modules/shipTypes";
 import { getAddress } from "viem";
 
 type BigNumberish = bigint | number;
-
-type RoundInfo = [`0x${string}`, `0x${string}`, number];
+type RoundInfo = [`0x${string}`, `0x${string}`, number, bigint, bigint, bigint];
 
 enum GameState {
   P1Joined = 0,
@@ -122,11 +121,13 @@ describe("Battleship", function () {
         battleship.read.nextRoundId(),
       ]);
 
-      expect(roundInfo).deep.equal([
+      expect(roundInfo).include.ordered.members([
         p1Addr,
         helpers.zeroAddr,
         GameState.P1Joined,
       ]);
+      expect(roundInfo[4] === roundInfo[3]).true;
+      expect(roundInfo[5]).equal(0n);
       expect(nextRoundId).equal(1n);
     });
 
@@ -139,7 +140,13 @@ describe("Battleship", function () {
       await battleship.write.p2join([roundId], { account: p2Addr });
 
       const roundInfo = await battleship.read.getRoundInfo([roundId]);
-      expect(roundInfo).deep.equal([p1Addr, p2Addr, GameState.P2Joined]);
+      expect(roundInfo).include.ordered.members([
+        p1Addr,
+        p2Addr,
+        GameState.P2Joined,
+      ]);
+      expect(roundInfo[4] > roundInfo[3]).true;
+      expect(roundInfo[5]).equal(0n);
     });
   });
 

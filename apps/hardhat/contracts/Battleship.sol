@@ -29,6 +29,15 @@ contract Battleship is Ownable {
     P2Won
   }
 
+  struct RoundView {
+    address p1;
+    address p2;
+    GameState state;
+    uint startTime;
+    uint lastUpdate;
+    uint endTime;
+  }
+
   struct GameRound {
     // p1 and p2 addr, only they can send the missile
     address p1;
@@ -120,6 +129,29 @@ contract Battleship is Ownable {
 
   function getBoardSize() public view returns(uint8[2] memory) {
     return boardSize;
+  }
+
+  // Retrieve 25 rounds. The last bool value indicates if it reaches the end of all rounds
+  function get25Rounds(uint64 roundId) public view
+    validRoundId(roundId)
+    returns(RoundView[] memory, bool)
+  {
+    RoundView[] memory rView = new RoundView[](25);
+    uint64 endId;
+    bool end;
+    if (roundId + 25 - 1 >= nextRoundId) {
+      endId = nextRoundId - 1;
+      end = true;
+    } else {
+      endId = roundId + 25 - 1;
+      end = false;
+    }
+
+    for (uint64 i = roundId; i <= endId; i++) {
+      GameRound storage r = rounds[i];
+      rView[i] = RoundView(r.p1, r.p2, r.state, r.startTime, r.lastUpdate, r.endTime);
+    }
+    return (rView, end);
   }
 
   function getRoundInfo(uint64 roundId) public view

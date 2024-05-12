@@ -255,23 +255,26 @@ describe("Battleship", function () {
       ).rejectedWith(/ship submitted size doesn't match its expected size/);
     });
 
-    //   it("should allow setting up ships with valid parameters", async () => {
-    //     const { battleship, p2 } = await loadFixture(p2JoinedFixture);
-    //     const shipId = 1;
-    //     const [p2Addr, shipRows, shipCols] = await Promise.all([
-    //       p2.getAddress(),
-    //       battleship.SHIP_SIZES(shipId, 0),
-    //       battleship.SHIP_SIZES(shipId, 1),
-    //     ]);
+      it("should allow setting up ships with valid parameters", async () => {
+        const { battleship, p2 } = await loadFixture(p2JoinedFixture);
+        const shipId = 1;
+        const roundId = 0n;
+        const { addr: p2Addr } = p2;
 
-    //     const topLeft = [0n, 0n];
-    //     const bottomRight = [shipRows - 1n, shipCols - 1n];
-    //     await expect(
-    //       battleship.connect(p2).setupShips(shipId, topLeft, bottomRight)
-    //     )
-    //       .emit(battleship, "SetupShip")
-    //       .withArgs(p2Addr, shipId);
-    //   });
+        const [shipRows, shipCols] = [shipTypes[shipId].size[0], shipTypes[shipId].size[1]];
+
+        const topLeft: [number, number] = [0, 0];
+        const bottomRight: [number, number] = [shipRows - 1, shipCols - 1];
+        const hash = await battleship.write.setupShips(
+          [roundId, shipId, topLeft, bottomRight],
+          { account: p2Addr }
+        );
+
+        console.log("hash:", hash);
+
+        // .emit(battleship, "SetupShip")
+        // .withArgs(p2Addr, shipId);
+      });
 
     //   it("should not allow game to start without both players complete setting up ships", async () => {
     //     const { battleship, p3 } = await loadFixture(p2JoinedFixture);

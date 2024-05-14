@@ -30,6 +30,7 @@ const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {},
+    localhost: {},
     sepolia: {
       chainId: 11155111,
       url: `https://eth-sepolia.g.alchemy.com/v2/${env.ALCHEMY_SEPOLIA_KEY}`,

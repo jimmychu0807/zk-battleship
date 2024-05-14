@@ -22,6 +22,7 @@
   "scripts": {
     "clean": "hardhat clean && rimraf typechain-types",
     "node": "hardhat node",
+    "battleship:dev": "hardhat ignition deploy ignition/modules/Battleship.ts --strategy create2 --network localhost",
     "battleship:deploy": "hardhat ignition deploy ignition/modules/Battleship.ts --strategy create2",
     "compile": "hardhat --typecheck compile",
     "test": "pnpm compile && hardhat --typecheck test",

@@ -11,15 +11,18 @@
     "@types/mocha": "^10.0.6",
     "@types/node": "20.12.11",
     "chai-as-promised": "^7.1.2",
+    "dotenv": "^16.4.5",
     "hardhat": "^2.22.3",
+    "rimraf": "^5.0.7",
     "viem": "2.x"
   },
   "engine": {
     "node": ">=20"
   },
   "scripts": {
-    "clean": "hardhat clean && rm -rf typechain-types",
-    "dev": "hardhat node",
+    "clean": "hardhat clean && rimraf typechain-types",
+    "node": "hardhat node",
+    "battleship:deploy": "hardhat ignition deploy ignition/modules/Battleship.ts --strategy create2",
     "compile": "hardhat --typecheck compile",
     "test": "pnpm compile && hardhat --typecheck test",
     "validate": "pnpm test"

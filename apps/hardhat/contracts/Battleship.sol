@@ -29,15 +29,6 @@ contract Battleship is Ownable {
     P2Won
   }
 
-  struct RoundView {
-    address p1;
-    address p2;
-    GameState state;
-    uint startTime;
-    uint lastUpdate;
-    uint endTime;
-  }
-
   struct GameRound {
     // p1 and p2 addr, only they can send the missile
     address p1;
@@ -53,6 +44,16 @@ contract Battleship is Ownable {
     uint lastUpdate;
     uint endTime;
   }
+
+  struct GameRoundView {
+    address p1;
+    address p2;
+    GameState state;
+    uint startTime;
+    uint lastUpdate;
+    uint endTime;
+  }
+
   GameRound[] public rounds;
   uint64 public nextRoundId = 0;
 
@@ -131,35 +132,22 @@ contract Battleship is Ownable {
     return boardSize;
   }
 
-  // Retrieve 25 rounds. The last bool value indicates if it reaches the end of all rounds
-  function get25Rounds(uint64 roundId) public view
-    validRoundId(roundId)
-    returns(RoundView[] memory, bool)
-  {
-    RoundView[] memory rView = new RoundView[](25);
-    uint64 endId;
-    bool end;
-    if (roundId + 25 - 1 >= nextRoundId) {
-      endId = nextRoundId - 1;
-      end = true;
-    } else {
-      endId = roundId + 25 - 1;
-      end = false;
-    }
+  function getAllRounds() public view returns(GameRoundView[] memory) {
+    GameRoundView[] memory rView = new GameRoundView[](rounds.length);
 
-    for (uint64 i = roundId; i <= endId; i++) {
+    for (uint64 i = 0; i < rounds.length; i++) {
       GameRound storage r = rounds[i];
-      rView[i] = RoundView(r.p1, r.p2, r.state, r.startTime, r.lastUpdate, r.endTime);
+      rView[i] = GameRoundView(r.p1, r.p2, r.state, r.startTime, r.lastUpdate, r.endTime);
     }
-    return (rView, end);
+    return rView;
   }
 
-  function getRoundInfo(uint64 roundId) public view
+  function getRound(uint64 roundId) public view
     validRoundId(roundId)
-    returns(address, address, GameState, uint, uint, uint)
+    returns(GameRoundView memory)
   {
-    GameRound storage round = rounds[roundId];
-    return (round.p1, round.p2, round.state, round.startTime, round.lastUpdate, round.endTime);
+    GameRound storage r = rounds[roundId];
+    return GameRoundView(r.p1, r.p2, r.state, r.startTime, r.lastUpdate, r.endTime);
   }
 
   function getRoundMoves(uint64 roundId, address p) public view

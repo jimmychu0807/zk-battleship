@@ -6,8 +6,8 @@ typechain
 typechain-types
 
 # Hardhat files
-cache
-artifacts
+/cache
+/artifacts
 
 # Ignore the output from circom because we want people to build these
 # Users can remove these lines and commit the artifacts
@@ -19,4 +19,4 @@ circuits/*.sym
 circuits/loc
 
 # hardhat ignition deployment
-ignition/deployments
+ignition/deployments/chain-31337

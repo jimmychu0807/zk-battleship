@@ -7,7 +7,7 @@ function Footer() {
   const { authorHomepage, github } = project;
 
   return (
-    <Flex justify="center">
+    <Flex justify="center" my={6}>
       <Box mr={5}>
         <Link href={github}>
           <Icon color="gray" as={FaGithub} boxSize={5} />

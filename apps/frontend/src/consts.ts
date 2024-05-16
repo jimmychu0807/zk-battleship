@@ -1,6 +1,9 @@
 import { defineChain } from "viem";
 
-export const wagmiProjectId = "9f9039746115860d0e5657789eb84202";
+export const walletConnectProjectId = "9f9039746115860d0e5657789eb84202";
+
+// Battleship contract deployed address
+export const deployedAddress = "0xF0aD7B70011a7c9c44f21e178d22a6BF7321ebe0";
 
 export const project = {
   name: "ZK Battleship",

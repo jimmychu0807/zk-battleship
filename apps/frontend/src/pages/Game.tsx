@@ -1,130 +1,170 @@
-import { useEffect, useState, useId } from "react";
+import { useEffect, useState, useId, useCallback } from "react";
 import { useParams, Form } from "react-router-dom";
 import { Flex, Text, Heading, Button, Input } from "@chakra-ui/react";
-import { useConfig, useReadContracts } from "wagmi";
+import {
+  useConfig,
+  useReadContract,
+  useAccount,
+  useWaitForTransactionReceipt,
+  useWriteContract,
+} from "wagmi";
 import { readContracts } from "wagmi/actions";
-import { battleshipArtifact, GameState } from "../helpers";
+import { useQueryClient } from "@tanstack/react-query";
+import { battleshipArtifact, GameState, formatters } from "../helpers";
 
-async function loader({ params }) {
-  const { contractAddr } = params;
-  return { contractAddr };
-}
-
-const { abi } = battleshipArtifact;
+const { abi, deployedAddress } = battleshipArtifact;
+const contractCfg = { abi, address: deployedAddress };
 
 export default function Game() {
-  const { contractAddr: address } = useParams();
-
-  const { data, error, isPending } = useReadContracts({
-    // prettier-ignore
-    contracts: [
-      { abi, address, functionName: "gameState" },
-      { abi, address, functionName: "p1" },
-      { abi, address, functionName: "p2" },
-    ],
+  const { roundId } = useParams();
+  const { address } = useAccount();
+  const queryClient = useQueryClient();
+  const {
+    data,
+    error,
+    isPending,
+    queryKey: roundQueryKey,
+  } = useReadContract({
+    ...contractCfg,
+    functionName: "getRound",
+    args: [roundId],
   });
-  const [gameState, p1Addr, p2Addr] = data || [];
+  const {
+    data: joinGameHash,
+    writeContract: joinGameTx,
+    isPending: jgPending,
+  } = useWriteContract();
+  const { data: txReceipt, isSuccess } = useWaitForTransactionReceipt({
+    hash: joinGameHash,
+  });
+
+  const joinGameCB = useCallback(() => {
+    joinGameTx({
+      ...contractCfg,
+      functionName: "p2join",
+      args: [roundId],
+    });
+  }, [roundId, joinGameTx]);
+
+  useEffect(() => {
+    if (!isSuccess || !txReceipt) return;
+    queryClient.invalidateQueries({ queryKey: roundQueryKey });
+  }, [isSuccess, txReceipt, queryClient, roundQueryKey]);
+
+  const { state, p1, p2, startTime, lastUpdate } = data || {};
 
   return isPending ? (
     <Text>Pending for smart contract data...</Text>
   ) : error ? (
     <Text>Error {error.toString()}</Text>
   ) : (
-    <Flex direction="column" gap={3}>
-      <Text>Game Contract: {address}</Text>
-      <Text>Game status: {GameState[gameState.result]}</Text>
-      <Text>Player 1: ${p1Addr.result}</Text>
-      <Text>Player 2: ${p2Addr.result}</Text>
-      {GameState[gameState.result] === "P2Joined" && (
-        <SetupShips contractAddr={address} />
+    <Flex direction="column" gap={3} alignItems="center">
+      <Text>Round ID: {roundId}</Text>
+      <Text>Game status: {GameState[state]}</Text>
+      <Text>Player 1: {p1}</Text>
+      <Text>Player 2: {p2}</Text>
+      <Text>Start Time: {formatters.dateTime(startTime)}</Text>
+      <Text>Last Update: {formatters.dateTime(lastUpdate)}</Text>
+
+      {GameState[state] === "P1Joined" && address !== p1 && (
+        <Button
+          colorScheme="blue"
+          variant="outline"
+          width="10em"
+          isLoading={jgPending}
+          onClick={joinGameCB}
+        >
+          Join Game
+        </Button>
       )}
-      {(GameState[gameState.result] === "P1Move" ||
-        GameState[gameState.result] === "P2Move") && (
-        <PlayerMove contractAddr={address} />
+
+      {GameState[state] === "P2Joined" && <SetupShips roundId={roundId} />}
+      {(GameState[state] === "P1Move" || GameState[state] === "P2Move") && (
+        <PlayerMove roundId={roundId} />
       )}
-      {(GameState[gameState.result] === "P1Won" ||
-        GameState[gameState.result] === "P2Won") && (
-        <GameFinished contractAddr={address} />
+      {(GameState[state] === "P1Won" || GameState[state] === "P2Won") && (
+        <GameFinished roundId={roundId} />
       )}
     </Flex>
   );
 }
 
-function SetupShips({ contractAddr }) {
-  const wagmiConfig = useConfig();
+function SetupShips({ roundId }) {
+  console.log("roundId:", roundId);
+  // const wagmiConfig = useConfig();
 
-  const boardInfo = ["TOTAL_SHIPS", "BOARD_ROWS", "BOARD_COLS"];
-  const [address, abi] = [contractAddr, battleshipArtifact.abi];
-  const bResult = useReadContracts({
-    contracts: boardInfo.map((functionName) => ({
-      address,
-      abi,
-      functionName,
-    })),
-  });
+  // const boardInfo = ["TOTAL_SHIPS", "BOARD_ROWS", "BOARD_COLS"];
+  // const [address, abi] = [contractAddr, battleshipArtifact.abi];
+  // const bResult = useReadContracts({
+  //   contracts: boardInfo.map((functionName) => ({
+  //     address,
+  //     abi,
+  //     functionName,
+  //   })),
+  // });
 
-  const [shipInfo, setShipInfo] = useState([]);
-  const formId = useId();
+  // const [shipInfo, setShipInfo] = useState([]);
+  // const formId = useId();
 
-  const [totalShips, boardRows, boardCols] = bResult.data || [];
+  // const [totalShips, boardRows, boardCols] = bResult.data || [];
 
-  useEffect(() => {
-    async function getShipsInfo() {
-      // const shipInfo = ['SHIP_NAMES', 'SHIP_SIZES'];
-      if (!totalShips || !totalShips.result || totalShips.result === 0) return;
+  // useEffect(() => {
+  //   async function getShipsInfo() {
+  //     // const shipInfo = ['SHIP_NAMES', 'SHIP_SIZES'];
+  //     if (!totalShips || !totalShips.result || totalShips.result === 0) return;
 
-      const contractInfo = { address, abi };
-      const totalShipsVal = totalShips.result;
-      const arr = Array(totalShipsVal)
-        .fill("")
-        .map((_, idx) => idx);
-      const shipNames = await readContracts(wagmiConfig, {
-        contracts: arr.map((idx) => ({
-          ...contractInfo,
-          functionName: "SHIP_NAMES",
-          args: [idx],
-        })),
-      });
+  //     const contractInfo = { address, abi };
+  //     const totalShipsVal = totalShips.result;
+  //     const arr = Array(totalShipsVal)
+  //       .fill("")
+  //       .map((_, idx) => idx);
+  //     const shipNames = await readContracts(wagmiConfig, {
+  //       contracts: arr.map((idx) => ({
+  //         ...contractInfo,
+  //         functionName: "SHIP_NAMES",
+  //         args: [idx],
+  //       })),
+  //     });
 
-      const arr2 = Array(totalShipsVal)
-        .fill("")
-        .map((_, idx) => [
-          [idx, 0],
-          [idx, 1],
-        ])
-        .flat();
-      const shipSizes = await readContracts(wagmiConfig, {
-        contracts: arr2.map(([idx, rc]) => ({
-          ...contractInfo,
-          functionName: "SHIP_SIZES",
-          args: [idx, rc],
-        })),
-      });
+  //     const arr2 = Array(totalShipsVal)
+  //       .fill("")
+  //       .map((_, idx) => [
+  //         [idx, 0],
+  //         [idx, 1],
+  //       ])
+  //       .flat();
+  //     const shipSizes = await readContracts(wagmiConfig, {
+  //       contracts: arr2.map(([idx, rc]) => ({
+  //         ...contractInfo,
+  //         functionName: "SHIP_SIZES",
+  //         args: [idx, rc],
+  //       })),
+  //     });
 
-      const shipInfo = shipNames.reduce(
-        (memo, data, idx) => ({
-          ...memo,
-          [data.result]: [
-            shipSizes[idx * 2].result,
-            shipSizes[idx * 2 + 1].result,
-          ],
-        }),
-        {}
-      );
+  //     const shipInfo = shipNames.reduce(
+  //       (memo, data, idx) => ({
+  //         ...memo,
+  //         [data.result]: [
+  //           shipSizes[idx * 2].result,
+  //           shipSizes[idx * 2 + 1].result,
+  //         ],
+  //       }),
+  //       {}
+  //     );
 
-      setShipInfo(shipInfo);
-    }
+  //     setShipInfo(shipInfo);
+  //   }
 
-    getShipsInfo();
-  }, [totalShips, abi, address, wagmiConfig]);
+  //   getShipsInfo();
+  // }, [totalShips, abi, address, wagmiConfig]);
 
-  console.log("boardInfo:", totalShips, boardRows, boardCols);
-  console.log("shipInfo:", shipInfo);
+  // console.log("boardInfo:", totalShips, boardRows, boardCols);
+  // console.log("shipInfo:", shipInfo);
 
   return (
     <Flex direction="column">
       <Heading size="md">Setup Ship Position</Heading>
-      <Form method="post" action={`/game/${contractAddr}/setupShip`}>
+      {/*      <Form method="post" action={`/game/${contractAddr}/setupShip`}>
         {Object.entries(shipInfo).map(([shipName, shipSize]) => (
           <Flex key={`form-${formId}-${shipName}`} my={4}>
             <span style={{ display: "block", width: "250px" }}>
@@ -150,7 +190,7 @@ function SetupShips({ contractAddr }) {
           </Flex>
         ))}
         <Button type="submit">Submit</Button>
-      </Form>
+      </Form>*/}
     </Flex>
   );
 }
@@ -170,5 +210,3 @@ function GameFinished() {
     </>
   );
 }
-
-Game.loader = loader;

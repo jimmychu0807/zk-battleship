@@ -10,7 +10,7 @@ import {
 } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-import { wagmiProjectId, project, devChain } from "../consts";
+import { walletConnectProjectId, project, devChain } from "../consts";
 import { PublicClientProvider } from "./PublicClientContext";
 
 interface Props {
@@ -35,14 +35,14 @@ if (isDev) chains.push(devChain);
 
 const wagmiConfig = defaultWagmiConfig({
   chains,
-  projectId: wagmiProjectId,
+  projectId: walletConnectProjectId,
   metadata,
 });
 
 // create the modal
 createWeb3Modal({
   wagmiConfig,
-  projectId: wagmiProjectId,
+  projectId: walletConnectProjectId,
   enableAnalytics: true,
   defaultChain: isDev ? devChain : undefined,
 });

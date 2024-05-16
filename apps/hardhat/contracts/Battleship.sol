@@ -173,8 +173,6 @@ contract Battleship is Ownable {
     updateGameState(currentId, GameState.P1Joined);
 
     emit NewGame(currentId, msg.sender);
-
-
   }
 
   function p2join(uint64 roundId) public

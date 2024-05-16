@@ -24,11 +24,7 @@ const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<App />}>
       <Route index element={<Home />} />
-      <Route
-        path="/game/:contractAddr"
-        element={<Game />}
-        loader={Game.loader}
-      />
+      <Route path="/game/:roundId" element={<Game />} />
     </Route>
   )
 );

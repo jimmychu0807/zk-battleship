@@ -1,28 +1,19 @@
-import { useEffect, useState, useCallback } from "react";
-import {
-  Flex,
-  Text,
-  ButtonGroup,
-  Button,
-  Card,
-  CardBody,
-  FormControl,
-  FormLabel,
-  Input,
-} from "@chakra-ui/react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { Flex, Text, Button, Card, CardBody } from "@chakra-ui/react";
 import { useWalletInfo, useWeb3ModalState } from "@web3modal/wagmi/react";
 import {
   useAccount,
   useWalletClient,
   useWriteContract,
+  useReadContract,
   useWaitForTransactionReceipt,
 } from "wagmi";
-import { getContractAddress, WalletClient, PublicClient } from "viem";
+import { useQueryClient } from "@tanstack/react-query";
+import { WalletClient, PublicClient, parseEventLogs } from "viem";
 import { useNavigate, Link } from "react-router-dom";
-import { useLocalStorage, useToggle } from "usehooks-ts";
 import { usePublicClient } from "../hooks/usePublicClient";
 
-import { battleshipArtifact } from "../helpers";
+import { battleshipArtifact, battleshipEventTypes } from "../helpers";
 
 interface WalletInfo {
   address: string;
@@ -38,163 +29,119 @@ function PromptForWalletConnect() {
   );
 }
 
-async function deployBattleshipGame(
-  walletInfo: WalletInfo | undefined,
-  navigate,
-  setCreatedGames
-) {
-  if (!walletInfo) throw new Error("walletInfo undefined");
-
-  const { abi, bytecode } = battleshipArtifact;
-  const { walletClient, publicClient } = walletInfo;
-
-  const txHash = await walletClient.deployContract({
-    abi,
-    bytecode,
-    args: [],
-  });
-
-  const tx = await publicClient.getTransaction({ hash: txHash });
-  const contractAddr = getContractAddress({
-    from: tx.from,
-    nonce: BigInt(tx.nonce),
-  });
-
-  // save the contractAddr in localStorage
-  setCreatedGames((prev: Array<string>) => [...prev, contractAddr]);
-
-  // navigate to another page
-  navigate(`/game/${contractAddr}`);
-}
-
 function GameStart() {
+  const { abi, deployedAddress } = battleshipArtifact;
+  const contractCfg = useMemo(
+    () => ({ abi, address: deployedAddress }),
+    [abi, deployedAddress]
+  );
+
   const [walletInfo, setWalletInfo] = useState<WalletInfo | undefined>(
     undefined
   );
-  const result = useWalletClient();
-  const { address } = useAccount();
+  const [newGameClicked, setNewGameClicked] = useState<boolean>(false);
+  const wcResult = useWalletClient();
+  const queryClient = useQueryClient();
+  const { address: userAddr } = useAccount();
   const { selectedNetworkId } = useWeb3ModalState();
   const publicClient = usePublicClient(selectedNetworkId);
   const navigate = useNavigate();
-  const [showJoinGame, toggleJoinGame] = useToggle(false);
-  const [createdGames, setCreatedGames, forgetCreatedGames] = useLocalStorage(
-    "created-games",
-    []
-  );
+  const { data: txHash, isPending, writeContract } = useWriteContract();
+  const { data: txReceipt, isSuccess: txSuccess } =
+    useWaitForTransactionReceipt({
+      hash: txHash,
+    });
+  const roundsResult = useReadContract({
+    ...contractCfg,
+    functionName: "getAllRounds",
+  });
+
+  const newGame = useCallback(() => {
+    if (!walletInfo) return;
+
+    writeContract({
+      ...contractCfg,
+      functionName: "newGame",
+      args: [],
+    });
+
+    setNewGameClicked(true);
+  }, [walletInfo, writeContract, contractCfg]);
 
   useEffect(() => {
-    if (result.data && selectedNetworkId) {
+    if (wcResult.data && selectedNetworkId) {
       setWalletInfo({
-        address: address as string,
-        walletClient: result.data,
+        address: userAddr as string,
+        walletClient: wcResult.data,
         publicClient,
       });
     }
-  }, [result.data, address, publicClient, selectedNetworkId]);
+  }, [wcResult.data, userAddr, publicClient, selectedNetworkId]);
 
-  return result.isError ? (
-    <h1>Wallet fetching Error</h1>
-  ) : result.isPending ? (
+  useEffect(() => {
+    if (!txReceipt || !txSuccess || !roundsResult) return;
+
+    queryClient.invalidateQueries({ queryKey: roundsResult.queryKey });
+
+    if (newGameClicked) {
+      const evLogs = parseEventLogs({
+        abi,
+        eventName: battleshipEventTypes.newGame,
+        logs: txReceipt.logs,
+      });
+      const roundId = Number(evLogs[0].args.roundId);
+
+      setNewGameClicked(false);
+      navigate(`/game/${roundId}`);
+    }
+  }, [
+    queryClient,
+    txReceipt,
+    txSuccess,
+    abi,
+    navigate,
+    newGameClicked,
+    roundsResult,
+  ]);
+
+  return wcResult.isError || roundsResult.isError ? (
+    <h1>Fetching results Error</h1>
+  ) : wcResult.isPending || roundsResult.isPending ? (
     <h1>Loading...</h1>
   ) : (
-    <Flex direction="column" gap={10}>
+    <Flex direction="column" gap={10} alignItems="center">
       <Flex direction="column" gap={5}>
-        {createdGames.map((addr) => (
+        {roundsResult.data.map((round, idx: number) => (
           <GameCard
-            id={`gameCard-${addr}`}
-            key={`gameCard-${addr}`}
-            contractAddr={addr}
+            id={`gameCard-${idx}`}
+            key={`gameCard-${idx}`}
+            idx={idx}
+            round={round}
           />
         ))}
       </Flex>
-      <ButtonGroup
-        display="flex"
-        justifyContent="space-between"
+      <Button
         colorScheme="blue"
         variant="outline"
-        spacing="6"
+        width="10em"
+        isLoading={isPending}
+        onClick={newGame}
       >
-        <Button
-          height="5em"
-          width="10em"
-          onClick={() =>
-            deployBattleshipGame(walletInfo, navigate, setCreatedGames)
-          }
-        >
-          Create Game
-        </Button>
-        <Button height="5em" width="10em" onClick={toggleJoinGame}>
-          Join Game
-        </Button>
-      </ButtonGroup>
-      {showJoinGame && <JoinGame />}
-
-      {import.meta.env.DEV && (
-        <Button onClick={forgetCreatedGames}>Forget Games</Button>
-      )}
+        New Game
+      </Button>
     </Flex>
   );
 }
 
-function JoinGame() {
-  const [contractAddr, setContractAddr] = useState("");
-  const { data: txHash, isPending, writeContract } = useWriteContract();
-  const { isLoading, isSuccess } = useWaitForTransactionReceipt({
-    hash: txHash,
-  });
-  const navigate = useNavigate();
-
-  const joinGame = useCallback(() => {
-    writeContract({
-      address: contractAddr,
-      abi: battleshipArtifact.abi,
-      functionName: "p2join",
-      args: [],
-    });
-  }, [contractAddr, writeContract]);
-
-  useEffect(() => {
-    if (contractAddr && txHash && isSuccess) {
-      navigate(`/game/${contractAddr}`);
-    }
-  }, [contractAddr, txHash, isSuccess, navigate]);
-
+function GameCard({ idx, round }) {
   return (
-    <FormControl
-      display="flex"
-      direction="row"
-      justifyContent="space-between"
-      alignItems="flex-end"
-    >
-      <Flex direction="column">
-        <FormLabel>Battleship Contract Address</FormLabel>
-        <Input
-          type="text"
-          value={contractAddr}
-          onChange={(ev) => setContractAddr(ev.target.value)}
-        />
-      </Flex>
-      <Button
-        isLoading={isPending}
-        colorScheme="blue"
-        variant="outline"
-        onClick={joinGame}
-      >
-        Join
-      </Button>
-      {txHash && <Text>tx Hash: {txHash}</Text>}
-      {isLoading && <Text>Waiting for confirmation...</Text>}
-      {isSuccess && <Text>Transaction confirmed.</Text>}
-    </FormControl>
-  );
-}
-
-function GameCard({ contractAddr }) {
-  return (
-    <Link to={`/game/${contractAddr}`}>
+    <Link to={`/game/${idx}`}>
       <Card>
         <CardBody>
-          <Text>{contractAddr}</Text>
+          <Text>ID: {idx}</Text>
+          <Text>p1: {round.p1}</Text>
+          <Text>p2: {round.p2}</Text>
+          <Text>state: {round.state}</Text>
         </CardBody>
       </Card>
     </Link>

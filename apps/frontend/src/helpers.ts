@@ -19,7 +19,7 @@ const battleshipArtifact = {
   // Since we used CREATE2 to deploy contract (https://hardhat.org/ignition/docs/guides/create2),
   //   the deployed address should be the same across all chains.
   deployedAddress,
-};
+} as const;
 
 const battleshipEventTypes = {
   newGame: "NewGame",

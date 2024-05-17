@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Flex, Text, Button, Card, CardBody } from "@chakra-ui/react";
 import { useWalletInfo, useWeb3ModalState } from "@web3modal/wagmi/react";
 import {
@@ -21,6 +21,9 @@ interface WalletInfo {
   publicClient: PublicClient;
 }
 
+const { abi, deployedAddress } = battleshipArtifact;
+const contractCfg = { abi, address: deployedAddress };
+
 function PromptForWalletConnect() {
   return (
     <>
@@ -30,12 +33,6 @@ function PromptForWalletConnect() {
 }
 
 function GameStart() {
-  const { abi, deployedAddress } = battleshipArtifact;
-  const contractCfg = useMemo(
-    () => ({ abi, address: deployedAddress }),
-    [abi, deployedAddress]
-  );
-
   const [walletInfo, setWalletInfo] = useState<WalletInfo | undefined>(
     undefined
   );
@@ -66,7 +63,7 @@ function GameStart() {
     });
 
     setNewGameClicked(true);
-  }, [walletInfo, writeContract, contractCfg]);
+  }, [walletInfo, writeContract]);
 
   useEffect(() => {
     if (wcResult.data && selectedNetworkId) {
@@ -98,7 +95,6 @@ function GameStart() {
     queryClient,
     txReceipt,
     txSuccess,
-    abi,
     navigate,
     newGameClicked,
     roundsResult,

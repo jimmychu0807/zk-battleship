@@ -4,12 +4,14 @@ import { Flex, Text, Heading, Button, Input } from "@chakra-ui/react";
 import {
   useConfig,
   useReadContract,
+  useReadContracts,
   useAccount,
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
 import { readContracts } from "wagmi/actions";
 import { useQueryClient } from "@tanstack/react-query";
+import { isAddressEqual } from "viem";
 import { battleshipArtifact, GameState, formatters } from "../helpers";
 
 const { abi, deployedAddress } = battleshipArtifact;
@@ -65,8 +67,9 @@ export default function Game() {
       <Text>Player 2: {p2}</Text>
       <Text>Start Time: {formatters.dateTime(startTime)}</Text>
       <Text>Last Update: {formatters.dateTime(lastUpdate)}</Text>
-
-      {GameState[state] === "P1Joined" && address !== p1 && (
+      {GameState[state] === "P1Joined" && isAddressEqual(address, p1) ? (
+        <Text>Waiting for another player to join.</Text>
+      ) : GameState[state] === "P1Joined" && !isAddressEqual(address, p1) ? (
         <Button
           colorScheme="blue"
           variant="outline"
@@ -76,13 +79,11 @@ export default function Game() {
         >
           Join Game
         </Button>
-      )}
-
-      {GameState[state] === "P2Joined" && <SetupShips roundId={roundId} />}
-      {(GameState[state] === "P1Move" || GameState[state] === "P2Move") && (
+      ) : GameState[state] === "P2Joined" ? (
+        <SetupShips roundId={roundId} />
+      ) : GameState[state] === "P1Move" || GameState[state] === "P2Move" ? (
         <PlayerMove roundId={roundId} />
-      )}
-      {(GameState[state] === "P1Won" || GameState[state] === "P2Won") && (
+      ) : (
         <GameFinished roundId={roundId} />
       )}
     </Flex>
@@ -90,23 +91,29 @@ export default function Game() {
 }
 
 function SetupShips({ roundId }) {
-  console.log("roundId:", roundId);
-  // const wagmiConfig = useConfig();
-
-  // const boardInfo = ["TOTAL_SHIPS", "BOARD_ROWS", "BOARD_COLS"];
-  // const [address, abi] = [contractAddr, battleshipArtifact.abi];
-  // const bResult = useReadContracts({
-  //   contracts: boardInfo.map((functionName) => ({
-  //     address,
-  //     abi,
-  //     functionName,
-  //   })),
-  // });
+  const { address } = useAccount();
+  const result = useReadContracts({
+    contracts: ["getShipTypes", "getBoardSize"]
+      .map((call) => ({
+        ...contractCfg,
+        functionName: call,
+      }))
+      .concat([
+        {
+          ...contractCfg,
+          functionName: "getRound",
+          args: [roundId],
+        },
+      ]),
+  });
 
   // const [shipInfo, setShipInfo] = useState([]);
-  // const formId = useId();
+  // const wagmiConfig = useConfig();
+  const formId = useId();
 
-  // const [totalShips, boardRows, boardCols] = bResult.data || [];
+  const [shipTypes, boardSize, roundInfo] =
+    (Array.isArray(result.data) && result.data.map((item) => item.result)) ||
+    [];
 
   // useEffect(() => {
   //   async function getShipsInfo() {
@@ -158,39 +165,45 @@ function SetupShips({ roundId }) {
   //   getShipsInfo();
   // }, [totalShips, abi, address, wagmiConfig]);
 
-  // console.log("boardInfo:", totalShips, boardRows, boardCols);
-  // console.log("shipInfo:", shipInfo);
-
   return (
     <Flex direction="column">
       <Heading size="md">Setup Ship Position</Heading>
-      {/*      <Form method="post" action={`/game/${contractAddr}/setupShip`}>
-        {Object.entries(shipInfo).map(([shipName, shipSize]) => (
-          <Flex key={`form-${formId}-${shipName}`} my={4}>
-            <span style={{ display: "block", width: "250px" }}>
-              Position of {shipName} ({shipSize[0]} x {shipSize[1]})
-            </span>
-            <span>topLeft:</span>
-            <Input
-              name={`${shipName}-topLeft`}
-              type="text"
-              size="sm"
-              w="12em"
-              mx={3}
-            />
+      {result.isPending ? (
+        <Text>Fetching on-chain data...</Text>
+      ) : result.isError ? (
+        <Text>Fetching on-chain data ERROR!</Text>
+      ) : roundInfo.p1 !== address && roundInfo.p2 !== address ? (
+        <Text>You are not one of the player for this round.</Text>
+      ) : (
+        <Form method="post" action={`/game/${roundId}/setupShip`}>
+          {shipTypes.map((shipType) => (
+            <Flex key={`form-${formId}-${shipType.name}`} my={4}>
+              <span style={{ display: "block", width: "250px" }}>
+                Position of {shipType.name} ({shipType.size[0]} x{" "}
+                {shipType.size[1]})
+              </span>
+              <span>topLeft:</span>
+              <Input
+                name={`${shipType.name}-topLeft`}
+                type="text"
+                size="sm"
+                w="12em"
+                mx={3}
+              />
 
-            <span>bottomRight:</span>
-            <Input
-              name={`${shipName}-bottomRight`}
-              type="text"
-              size="sm"
-              w="12em"
-              mx={3}
-            />
-          </Flex>
-        ))}
-        <Button type="submit">Submit</Button>
-      </Form>*/}
+              <span>bottomRight:</span>
+              <Input
+                name={`${shipType.name}-bottomRight`}
+                type="text"
+                size="sm"
+                w="12em"
+                mx={3}
+              />
+            </Flex>
+          ))}
+          <Button type="submit">Submit</Button>
+        </Form>
+      )}
     </Flex>
   );
 }

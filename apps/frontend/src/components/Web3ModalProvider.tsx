@@ -6,7 +6,6 @@ import {
   sepolia, // Ethereum
   optimismSepolia, // Optimism
   bscTestnet, // BSC Testnet
-  baseSepolia, // Base
 } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -27,14 +26,14 @@ const metadata = {
   icons: [`${project.homepage}/logo/battleship-logo.jpeg`],
 };
 
-const chains = [sepolia, optimismSepolia, bscTestnet, baseSepolia];
-
+const supportedChains = { sepolia, optimismSepolia, bscTestnet };
 // Add the hardhat node devnet
-const isDev = import.meta.env.DEV;
-if (isDev) chains.push(devChain);
+const chains = import.meta.env.DEV
+  ? { ...supportedChains, devChain }
+  : supportedChains;
 
 const wagmiConfig = defaultWagmiConfig({
-  chains,
+  chains: Object.values(chains),
   projectId: walletConnectProjectId,
   metadata,
 });
@@ -44,7 +43,6 @@ createWeb3Modal({
   wagmiConfig,
   projectId: walletConnectProjectId,
   enableAnalytics: true,
-  defaultChain: isDev ? devChain : undefined,
 });
 
 export function Web3ModalProvider({ children }: Props) {

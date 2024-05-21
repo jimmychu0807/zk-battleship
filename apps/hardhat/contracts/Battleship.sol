@@ -254,6 +254,24 @@ contract Battleship is Ownable {
     for (uint8 i = 0; i < info.length; i++) {
       setupShip(roundId, info[i].shipId, info[i].topLeft, info[i].bottomRight);
     }
+
+    // start game if both side have completed ship setup
+    GameRound storage round = rounds[roundId];
+    if (allPlayerShipsReady(roundId, round.p1) && allPlayerShipsReady(roundId, round.p2)) {
+      startGame(roundId);
+    }
+  }
+
+  function allPlayerShipsReady(uint64 roundId, address player) public view
+    validRoundId(roundId)
+    returns (bool)
+  {
+    Ship[] storage playerShips = rounds[roundId].ships[player];
+    if (playerShips.length < shipTypes.length) return false;
+    for (uint8 i = 0; i < playerShips.length; i++) {
+      if (!playerShips[i].alive) return false;
+    }
+    return true;
   }
 
   function startGame(uint64 roundId) public

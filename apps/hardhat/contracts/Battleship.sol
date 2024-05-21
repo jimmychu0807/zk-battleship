@@ -10,7 +10,7 @@ contract Battleship is Ownable {
   }
   ShipType[] public shipTypes;
 
-  uint8[2] public boardSize = [9, 9];
+  uint8[2] public boardSize = [10, 10];
 
   struct Ship {
     uint64 body;
@@ -52,6 +52,12 @@ contract Battleship is Ownable {
     uint startTime;
     uint lastUpdate;
     uint endTime;
+  }
+
+  struct ShipSetupInfo {
+    uint8 shipId;
+    uint8[2] topLeft;
+    uint8[2] bottomRight;
   }
 
   GameRound[] public rounds;
@@ -187,7 +193,7 @@ contract Battleship is Ownable {
     emit P2Joined(roundId, msg.sender);
   }
 
-  function setupShips(
+  function setupShip(
     uint64 roundId,
     uint8 shipId,
     uint8[2] memory topLeft,
@@ -238,6 +244,16 @@ contract Battleship is Ownable {
     playerShips[shipId].alive = true;
 
     emit SetupShip(roundId, msg.sender, shipId);
+  }
+
+  function setupShips(uint64 roundId, ShipSetupInfo[] memory info) public
+    validRoundId(roundId)
+    allowedState(roundId, GameState.P2Joined)
+    onlyPlayers(roundId)
+  {
+    for (uint8 i = 0; i < info.length; i++) {
+      setupShip(roundId, info[i].shipId, info[i].topLeft, info[i].bottomRight);
+    }
   }
 
   function startGame(uint64 roundId) public

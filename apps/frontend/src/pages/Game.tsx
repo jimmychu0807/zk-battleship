@@ -146,8 +146,6 @@ function SetupShips({ roundId }) {
     (Array.isArray(result.data) && result.data.map((item) => item.result)) ||
     [];
 
-  console.log("player ships", shipInfo);
-
   const submitShipSetup = useCallback(
     async (ev) => {
       ev.preventDefault();
@@ -197,9 +195,6 @@ function SetupShips({ roundId }) {
   return (
     <Flex direction="column">
       <Heading size="md">Setup Ship Position</Heading>
-      <Text>
-        Board size: {boardSize[0]} rows x {boardSize[1]} cols
-      </Text>
 
       {result.isPending ? (
         <Text>Fetching on-chain data...</Text>
@@ -208,38 +203,42 @@ function SetupShips({ roundId }) {
       ) : roundInfo.p1 !== address && roundInfo.p2 !== address ? (
         <Text>You are not one of the player for this round.</Text>
       ) : (
-        <Form id={formId} method="post" onSubmit={submitShipSetup}>
-          {shipTypes.map((shipType, sId) => (
-            <Flex key={`form-${formId}-${shipType.name}`} my={4}>
-              <span style={{ display: "block", width: "250px" }}>
-                Position of {shipType.name} ({shipType.size[0]} x{" "}
-                {shipType.size[1]})
-              </span>
-              <span>topLeft:</span>
-              <Input
-                name={`${sId}-topLeft`}
-                type="text"
-                size="sm"
-                w="12em"
-                mx={3}
-                value={setupShipState[`${sId}-topLeft`] || ""}
-                onChange={updateSetupShipState}
-              />
-
-              <span>bottomRight:</span>
-              <Input
-                name={`${sId}-bottomRight`}
-                type="text"
-                size="sm"
-                w="12em"
-                mx={3}
-                value={setupShipState[`${sId}-bottomRight`] || ""}
-                onChange={updateSetupShipState}
-              />
-            </Flex>
-          ))}
-          <Button type="submit">Submit</Button>
-        </Form>
+        <>
+          <Text>
+            Board size: {boardSize[0]} rows x {boardSize[1]} cols
+          </Text>
+          <Form id={formId} method="post" onSubmit={submitShipSetup}>
+            {shipTypes.map((shipType, sId) => (
+              <Flex key={`form-${formId}-${shipType.name}`} my={4}>
+                <span style={{ display: "block", width: "250px" }}>
+                  Position of {shipType.name} ({shipType.size[0]} x{" "}
+                  {shipType.size[1]})
+                </span>
+                <span>topLeft:</span>
+                <Input
+                  name={`${sId}-topLeft`}
+                  type="text"
+                  size="sm"
+                  w="12em"
+                  mx={3}
+                  value={setupShipState[`${sId}-topLeft`] || ""}
+                  onChange={updateSetupShipState}
+                />
+                <span>bottomRight:</span>
+                <Input
+                  name={`${sId}-bottomRight`}
+                  type="text"
+                  size="sm"
+                  w="12em"
+                  mx={3}
+                  value={setupShipState[`${sId}-bottomRight`] || ""}
+                  onChange={updateSetupShipState}
+                />
+              </Flex>
+            ))}
+            <Button type="submit">Submit</Button>
+          </Form>
+        </>
       )}
     </Flex>
   );

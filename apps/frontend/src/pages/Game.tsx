@@ -1,15 +1,13 @@
-import { useEffect, useState, useId, useCallback } from "react";
+import { useEffect, useId, useState, useCallback } from "react";
 import { useParams, Form } from "react-router-dom";
 import { Flex, Text, Heading, Button, Input } from "@chakra-ui/react";
 import {
-  useConfig,
   useReadContract,
   useReadContracts,
   useAccount,
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
-import { readContracts } from "wagmi/actions";
 import { useQueryClient } from "@tanstack/react-query";
 import { isAddressEqual } from "viem";
 import { battleshipArtifact, GameState, formatters } from "../helpers";
@@ -90,8 +88,31 @@ export default function Game() {
   );
 }
 
+function parseFormData(data) {
+  return Object.entries(data).reduce((memo, [key, pos]) => {
+    if (pos.trim().length === 0) return memo;
+
+    const [x, y] = pos.split(",").map((s) => s.trim());
+    const [shipId, posName] = key.split("-");
+    const el = memo.find((el) => el.shipId === Number(shipId));
+    if (!el) {
+      const shipInfo = {
+        shipId: Number(shipId),
+        topLeft: [undefined, undefined],
+        bottomRight: [undefined, undefined],
+      };
+      shipInfo[posName] = [Number(x), Number(y)];
+      memo.push(shipInfo);
+    } else {
+      el[posName] = [Number(x), Number(y)];
+    }
+    return memo;
+  }, []);
+}
+
 function SetupShips({ roundId }) {
   const { address } = useAccount();
+  const [setupShipState, setSetupShipState] = useState({});
   const result = useReadContracts({
     contracts: ["getShipTypes", "getBoardSize"]
       .map((call) => ({
@@ -104,70 +125,82 @@ function SetupShips({ roundId }) {
           functionName: "getRound",
           args: [roundId],
         },
+      ])
+      .concat([
+        {
+          ...contractCfg,
+          functionName: "getRoundShips",
+          args: [roundId, address],
+        },
       ]),
   });
-
-  // const [shipInfo, setShipInfo] = useState([]);
-  // const wagmiConfig = useConfig();
+  const {
+    writeContract,
+    data: txHash,
+    status: writeStatus,
+    error: writeError,
+  } = useWriteContract();
   const formId = useId();
 
-  const [shipTypes, boardSize, roundInfo] =
+  const [shipTypes, boardSize, roundInfo, shipInfo] =
     (Array.isArray(result.data) && result.data.map((item) => item.result)) ||
     [];
 
-  // useEffect(() => {
-  //   async function getShipsInfo() {
-  //     // const shipInfo = ['SHIP_NAMES', 'SHIP_SIZES'];
-  //     if (!totalShips || !totalShips.result || totalShips.result === 0) return;
+  console.log("player ships", shipInfo);
 
-  //     const contractInfo = { address, abi };
-  //     const totalShipsVal = totalShips.result;
-  //     const arr = Array(totalShipsVal)
-  //       .fill("")
-  //       .map((_, idx) => idx);
-  //     const shipNames = await readContracts(wagmiConfig, {
-  //       contracts: arr.map((idx) => ({
-  //         ...contractInfo,
-  //         functionName: "SHIP_NAMES",
-  //         args: [idx],
-  //       })),
-  //     });
+  const submitShipSetup = useCallback(
+    async (ev) => {
+      ev.preventDefault();
+      const data = Object.fromEntries(new FormData(ev.target));
+      const shipSetupInfo = parseFormData(data);
 
-  //     const arr2 = Array(totalShipsVal)
-  //       .fill("")
-  //       .map((_, idx) => [
-  //         [idx, 0],
-  //         [idx, 1],
-  //       ])
-  //       .flat();
-  //     const shipSizes = await readContracts(wagmiConfig, {
-  //       contracts: arr2.map(([idx, rc]) => ({
-  //         ...contractInfo,
-  //         functionName: "SHIP_SIZES",
-  //         args: [idx, rc],
-  //       })),
-  //     });
+      writeContract({
+        ...contractCfg,
+        functionName: "setupShips",
+        args: [roundId, shipSetupInfo],
+      });
+    },
+    [roundId, writeContract]
+  );
 
-  //     const shipInfo = shipNames.reduce(
-  //       (memo, data, idx) => ({
-  //         ...memo,
-  //         [data.result]: [
-  //           shipSizes[idx * 2].result,
-  //           shipSizes[idx * 2 + 1].result,
-  //         ],
-  //       }),
-  //       {}
-  //     );
+  const updateSetupShipState = useCallback(
+    (ev) => {
+      setSetupShipState((prev) => ({
+        ...prev,
+        [ev.target.name]: ev.target.value,
+      }));
+    },
+    [setSetupShipState]
+  );
 
-  //     setShipInfo(shipInfo);
-  //   }
+  // listening to setupShips tx status change
+  useEffect(() => {
+    console.log("txHash", txHash);
+    console.log("writeStatus", writeStatus);
+    console.log("writeError", writeError);
+  }, [txHash, writeStatus, writeError]);
 
-  //   getShipsInfo();
-  // }, [totalShips, abi, address, wagmiConfig]);
+  // listening to shipInfo and update setupShipState (expect to be run once when the component is loaded)
+  useEffect(() => {
+    if (shipInfo && shipInfo.length > 0) {
+      const setupShipState = {};
+      shipInfo
+        .filter((el) => el.alive)
+        .forEach((el, idx) => {
+          setupShipState[`${idx}-topLeft`] = el.topLeft.join(",");
+          setupShipState[`${idx}-bottomRight`] = el.bottomRight.join(",");
+        });
+      setSetupShipState(setupShipState);
+    }
+  }, [shipInfo]);
 
   return (
     <Flex direction="column">
       <Heading size="md">Setup Ship Position</Heading>
+      <Text>
+        Board size: {boardSize[0]} rows x {boardSize[1]} cols
+      </Text>
+
       {result.isPending ? (
         <Text>Fetching on-chain data...</Text>
       ) : result.isError ? (
@@ -175,8 +208,8 @@ function SetupShips({ roundId }) {
       ) : roundInfo.p1 !== address && roundInfo.p2 !== address ? (
         <Text>You are not one of the player for this round.</Text>
       ) : (
-        <Form method="post" action={`/game/${roundId}/setupShip`}>
-          {shipTypes.map((shipType) => (
+        <Form id={formId} method="post" onSubmit={submitShipSetup}>
+          {shipTypes.map((shipType, sId) => (
             <Flex key={`form-${formId}-${shipType.name}`} my={4}>
               <span style={{ display: "block", width: "250px" }}>
                 Position of {shipType.name} ({shipType.size[0]} x{" "}
@@ -184,20 +217,24 @@ function SetupShips({ roundId }) {
               </span>
               <span>topLeft:</span>
               <Input
-                name={`${shipType.name}-topLeft`}
+                name={`${sId}-topLeft`}
                 type="text"
                 size="sm"
                 w="12em"
                 mx={3}
+                value={setupShipState[`${sId}-topLeft`] || ""}
+                onChange={updateSetupShipState}
               />
 
               <span>bottomRight:</span>
               <Input
-                name={`${shipType.name}-bottomRight`}
+                name={`${sId}-bottomRight`}
                 type="text"
                 size="sm"
                 w="12em"
                 mx={3}
+                value={setupShipState[`${sId}-bottomRight`] || ""}
+                onChange={updateSetupShipState}
               />
             </Flex>
           ))}

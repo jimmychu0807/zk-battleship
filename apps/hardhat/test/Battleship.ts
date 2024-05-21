@@ -37,7 +37,7 @@ const helpers = {
       ];
 
       // send tx to setup the ship
-      await battleship.write.setupShips([roundId, idx, topLeft, bottomRight], {
+      await battleship.write.setupShip([roundId, idx, topLeft, bottomRight], {
         account,
       });
 
@@ -220,7 +220,7 @@ describe("Battleship", function () {
       const bottomRight: [number, number] = [shipSize[0] - 1, shipSize[1] - 1];
 
       await expect(
-        battleship.write.setupShips([roundId, shipId, topLeft, bottomRight], {
+        battleship.write.setupShip([roundId, shipId, topLeft, bottomRight], {
           account: p3Addr,
         })
       ).be.rejectedWith(/Not one of the game players/);
@@ -250,7 +250,7 @@ describe("Battleship", function () {
       ];
 
       await expect(
-        battleship.write.setupShips(
+        battleship.write.setupShip(
           [roundId, totalShips, topLeft, bottomRight],
           {
             account: p1Addr,
@@ -260,7 +260,7 @@ describe("Battleship", function () {
 
       // topLeft and bottomRight coordinate switched
       await expect(
-        battleship.write.setupShips([roundId, shipId, bottomRight, topLeft], {
+        battleship.write.setupShip([roundId, shipId, bottomRight, topLeft], {
           account: p1Addr,
         })
       ).rejectedWith(/topLeft .* is greater than bottomRight .*/);
@@ -273,14 +273,14 @@ describe("Battleship", function () {
       ];
 
       await expect(
-        battleship.write.setupShips(
+        battleship.write.setupShip(
           [roundId, shipId, oobTopLeft, oobBottomRight],
           { account: p1Addr }
         )
       ).rejectedWith(/ship is placed out of bound/);
 
       await expect(
-        battleship.write.setupShips(
+        battleship.write.setupShip(
           [roundId, shipId, topLeft, [bottomRight[0], bottomRight[1] + 1]],
           { account: p1Addr }
         )
@@ -301,7 +301,7 @@ describe("Battleship", function () {
       const topLeft: [number, number] = [0, 0];
       const bottomRight: [number, number] = [shipRows - 1, shipCols - 1];
       // prettier-ignore
-      const hash = await battleship.write.setupShips(
+      const hash = await battleship.write.setupShip(
         [roundId, shipId, topLeft, bottomRight],
         { account: p2Addr }
       );

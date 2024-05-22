@@ -4,13 +4,13 @@ import "dotenv/config";
 
 const requiredEnvs = ["DEPLOYER_SK", "IGNITION_SALT"];
 requiredEnvs.forEach((envName) => {
-  if (!process.env[envName] || process.env[envName].length === 0) {
+  if (!process.env[envName] || (process.env[envName] as string).length === 0) {
     throw new Error(`${envName} is not set in .env`);
   }
 })
 
 const config: HardhatUserConfig = {
-  defaultNetwork: process.env.DEFAULT_NETWORK || "localhost",
+  defaultNetwork: process.env.DEFAULT_NETWORK || "hardhat",
   networks: {
     sepolia: {
       chainId: 11155111,

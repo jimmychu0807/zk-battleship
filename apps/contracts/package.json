@@ -20,9 +20,9 @@
     "node": ">=20"
   },
   "scripts": {
-    "clean": "hardhat clean && rimraf typechain-types",
+    "clean": "hardhat clean",
     "compile": "hardhat --typecheck compile",
-    "dev": "hardhat ignition deploy ignition/modules/Battleship.ts --strategy create2 --network localhost",
+    "dev": "pnpm compile && HARDHAT_NETWORK=localhost pnpm contracts-deploy",
     "contracts-deploy": "hardhat ignition deploy ignition/modules/Battleship.ts --strategy create2",
     "test": "pnpm compile && HARDHAT_NETWORK=hardhat hardhat --typecheck test",
     "validate": "pnpm test"

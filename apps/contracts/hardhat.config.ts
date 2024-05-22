@@ -2,49 +2,30 @@ import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox-viem";
 import "dotenv/config";
 
-const {
-  IGNITION_SALT = "",
-  DEPLOYER_SK = "",
-  ALCHEMY_OP_SEPOLIA_KEY = "",
-  ALCHEMY_SEPOLIA_KEY = "",
-  QUICKNODE_BSCTESTNET_KEY = "",
-  ETHERSCAN_APIKEY = "",
-} = process.env;
-
-const env: Record<string, string> = {
-  IGNITION_SALT,
-  DEPLOYER_SK,
-  ALCHEMY_SEPOLIA_KEY,
-  ALCHEMY_OP_SEPOLIA_KEY,
-  QUICKNODE_BSCTESTNET_KEY,
-  ETHERSCAN_APIKEY,
-};
-
-for (const [key, val] of Object.entries(env)) {
-  if (val.length === 0) {
-    throw new Error(`missing env ${key}`);
+const requiredEnvs = ["DEPLOYER_SK", "IGNITION_SALT"];
+requiredEnvs.forEach((envName) => {
+  if (!process.env[envName] || process.env[envName].length === 0) {
+    throw new Error(`${envName} is not set in .env`);
   }
-}
+})
 
 const config: HardhatUserConfig = {
-  defaultNetwork: "hardhat",
+  defaultNetwork: process.env.DEFAULT_NETWORK || "localhost",
   networks: {
-    hardhat: {},
-    localhost: {},
     sepolia: {
       chainId: 11155111,
-      url: `https://eth-sepolia.g.alchemy.com/v2/${env.ALCHEMY_SEPOLIA_KEY}`,
-      accounts: [env.DEPLOYER_SK],
+      url: `https://eth-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_SEPOLIA_KEY}`,
+      accounts: [process.env.DEPLOYER_SK as string],
     },
     optimismSepolia: {
       chainId: 11155420,
-      url: `https://opt-sepolia.g.alchemy.com/v2/${env.ALCHEMY_OP_SEPOLIA_KEY}`,
-      accounts: [env.DEPLOYER_SK],
+      url: `https://opt-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_OP_SEPOLIA_KEY}`,
+      accounts: [process.env.DEPLOYER_SK as string],
     },
     bscTestnet: {
       chainId: 97,
-      url: `https://blue-long-market.bsc-testnet.quiknode.pro/${env.QUICKNODE_BSCTESTNET_KEY}/`,
-      accounts: [env.DEPLOYER_SK],
+      url: `https://blue-long-market.bsc-testnet.quiknode.pro/${process.env.QUICKNODE_BSCTESTNET_KEY}/`,
+      accounts: [process.env.DEPLOYER_SK as string],
     },
   },
   solidity: {
@@ -59,7 +40,7 @@ const config: HardhatUserConfig = {
   ignition: {
     strategyConfig: {
       create2: {
-        salt: env.IGNITION_SALT,
+        salt: process.env.IGNITION_SALT as string,
       },
     },
   },
@@ -67,7 +48,7 @@ const config: HardhatUserConfig = {
     timeout: 40000,
   },
   etherscan: {
-    apiKey: env.ETHERSCAN_APIKEY,
+    apiKey: process.env.ETHERSCAN_APIKEY,
   },
 };
 

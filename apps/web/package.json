@@ -1,5 +1,5 @@
 {
-  "name": "zk-battleship-frontend",
+  "name": "@jimmychu0807/zk-battleship-web",
   "version": "0.1.0",
   "type": "module",
   "scripts": {

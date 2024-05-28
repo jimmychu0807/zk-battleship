@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Battleship is Ownable {
   struct ShipType {
@@ -33,25 +33,23 @@ contract Battleship is Ownable {
     // p1 and p2 addr, only they can send the missile
     address p1;
     address p2;
-
     // p1 & p2 attack history list
     mapping(address => uint8[2][]) moves;
     // p1 & p2 ship setup configuration
     mapping(address => Ship[]) ships;
     GameState state;
-
-    uint startTime;
-    uint lastUpdate;
-    uint endTime;
+    uint256 startTime;
+    uint256 lastUpdate;
+    uint256 endTime;
   }
 
   struct GameRoundView {
     address p1;
     address p2;
     GameState state;
-    uint startTime;
-    uint lastUpdate;
-    uint endTime;
+    uint256 startTime;
+    uint256 lastUpdate;
+    uint256 endTime;
   }
 
   struct ShipSetupInfo {
@@ -64,10 +62,10 @@ contract Battleship is Ownable {
   uint64 public nextRoundId = 0;
 
   // Events declaration
-  event NewGame(uint indexed roundId, address indexed sender);
-  event P2Joined(uint indexed roundId, address indexed sender);
-  event SetupShip(uint indexed roundId, address indexed sender, uint8 shipId);
-  event GameStart(uint indexed roundId);
+  event NewGame(uint256 indexed roundId, address indexed sender);
+  event P2Joined(uint256 indexed roundId, address indexed sender);
+  event SetupShip(uint256 indexed roundId, address indexed sender, uint8 shipId);
+  event GameStart(uint256 indexed roundId);
   event PlayerMove(uint indexed roundId, address indexed sender, uint8[2] hitRC, GameState gameState);
   event Hit(uint indexed roundId, address indexed opponent);
   event SinkShip(uint indexed roundId, address indexed opponent, uint8 shipId);

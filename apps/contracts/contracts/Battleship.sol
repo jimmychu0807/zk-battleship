@@ -2,75 +2,13 @@
 pragma solidity ^0.8.24;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IBattleship} from "./interfaces/IBattleship.sol";
+import {BOARD_ROWS, BOARD_COLS} from "./base/Constants.sol";
 
-contract Battleship is Ownable {
-  struct ShipType {
-    string name;
-    uint8[2] size;
-  }
+contract Battleship is IBattleship, Ownable {
   ShipType[] public shipTypes;
-
-  uint8[2] public boardSize = [10, 10];
-
-  struct Ship {
-    uint64 body;
-    uint8[2] topLeft;
-    uint8[2] bottomRight;
-    bool alive;
-  }
-
-  // game state
-  enum GameState {
-    P1Joined,
-    P2Joined,
-    P1Move,
-    P2Move,
-    P1Won,
-    P2Won
-  }
-
-  struct GameRound {
-    // p1 and p2 addr, only they can send the missile
-    address p1;
-    address p2;
-    // p1 & p2 attack history list
-    mapping(address => uint8[2][]) moves;
-    // p1 & p2 ship setup configuration
-    mapping(address => Ship[]) ships;
-    GameState state;
-    uint256 startTime;
-    uint256 lastUpdate;
-    uint256 endTime;
-  }
-
-  struct GameRoundView {
-    address p1;
-    address p2;
-    GameState state;
-    uint256 startTime;
-    uint256 lastUpdate;
-    uint256 endTime;
-  }
-
-  struct ShipSetupInfo {
-    uint8 shipId;
-    uint8[2] topLeft;
-    uint8[2] bottomRight;
-  }
-
   GameRound[] public rounds;
-  uint64 public nextRoundId = 0;
-
-  // Events declaration
-  event NewGame(uint256 indexed roundId, address indexed sender);
-  event P2Joined(uint256 indexed roundId, address indexed sender);
-  event SetupShip(uint256 indexed roundId, address indexed sender, uint8 shipId);
-  event GameStart(uint256 indexed roundId);
-  event PlayerMove(uint indexed roundId, address indexed sender, uint8[2] hitRC, GameState gameState);
-  event Hit(uint indexed roundId, address indexed opponent);
-  event SinkShip(uint indexed roundId, address indexed opponent, uint8 shipId);
-
-  // --- End of events declaration
+  uint32 public nextRoundId = 0;
 
   // Modifiers declaration
   modifier validRoundId(uint64 roundId) {
@@ -124,19 +62,19 @@ contract Battleship is Ownable {
   }
 
   // Viewer functions declaration
-  function getShipTypes() public view returns(ShipType[] memory) {
+  function getShipTypes() external view override returns (ShipType[] memory) {
     return shipTypes;
   }
 
-  function getShipTypeNum() public view returns(uint8) {
-    return uint8(shipTypes.length);
+  function _getShipTypeNum() internal view returns (uint16) {
+    return uint16(shipTypes.length);
   }
 
-  function getBoardSize() public view returns(uint8[2] memory) {
-    return boardSize;
+  function getBoardSize() external pure override returns(uint8[2] memory) {
+    return [BOARD_ROWS, BOARD_COLS];
   }
 
-  function getAllRounds() public view returns(GameRoundView[] memory) {
+  function getAllRounds() external view override returns(GameRoundView[] memory) {
     GameRoundView[] memory rView = new GameRoundView[](rounds.length);
 
     for (uint64 i = 0; i < rounds.length; i++) {
@@ -146,7 +84,7 @@ contract Battleship is Ownable {
     return rView;
   }
 
-  function getRound(uint64 roundId) public view
+  function getRound(uint32 roundId) external view override
     validRoundId(roundId)
     returns(GameRoundView memory)
   {
@@ -154,14 +92,14 @@ contract Battleship is Ownable {
     return GameRoundView(r.p1, r.p2, r.state, r.startTime, r.lastUpdate, r.endTime);
   }
 
-  function getRoundMoves(uint64 roundId, address p) public view
+  function getRoundMoves(uint32 roundId, address p) external view override
     validRoundId(roundId)
     returns(uint8[2][] memory)
   {
     return rounds[roundId].moves[p];
   }
 
-  function getRoundShips(uint64 roundId, address p) public view
+  function getRoundShips(uint32 roundId, address p) external view override
     validRoundId(roundId)
     returns(Ship[] memory)
   {
@@ -173,13 +111,13 @@ contract Battleship is Ownable {
   function newGame() public {
     GameRound storage round = rounds.push();
     round.p1 = msg.sender;
-    uint64 currentId = nextRoundId++;
+    uint32 currentId = nextRoundId++;
     updateGameState(currentId, GameState.P1Joined);
 
     emit NewGame(currentId, msg.sender);
   }
 
-  function p2join(uint64 roundId) public
+  function p2join(uint32 roundId) public
     validRoundId(roundId)
     allowedState(roundId, GameState.P1Joined)
   {
@@ -192,7 +130,7 @@ contract Battleship is Ownable {
   }
 
   function setupShip(
-    uint64 roundId,
+    uint32 roundId,
     uint8 shipId,
     uint8[2] memory topLeft,
     uint8[2] memory bottomRight
@@ -201,12 +139,12 @@ contract Battleship is Ownable {
     allowedState(roundId, GameState.P2Joined)
     onlyPlayers(roundId)
   {
-    require(shipId < getShipTypeNum(), "shipId is out of bound");
+    require(shipId < _getShipTypeNum(), "shipId is out of bound");
     // validate the ship topLeft and bottomRight coordinates are correct
     require (topLeft[0] <= bottomRight[0], "topLeft row is greater than bottomRight row");
     require (topLeft[1] <= bottomRight[1], "topLeft col is greater than bottomRight col");
-    require (bottomRight[0] < boardSize[0], "ship is placed out of bound (on row)");
-    require (bottomRight[1] < boardSize[1], "ship is placed out of bound (on column)");
+    require (bottomRight[0] < BOARD_ROWS, "ship is placed out of bound (on row)");
+    require (bottomRight[1] < BOARD_COLS, "ship is placed out of bound (on column)");
 
     uint8[2] storage shipSize = shipTypes[shipId].size;
     uint8 rowSize = bottomRight[0] - topLeft[0] + 1;
@@ -223,7 +161,7 @@ contract Battleship is Ownable {
 
     if (playerShips.length == 0) {
       // create empty ships for the player
-      for (uint8 i = 0; i < getShipTypeNum(); i++) {
+      for (uint8 i = 0; i < _getShipTypeNum(); i++) {
         playerShips.push(Ship({
           body: 0,
           topLeft: [0,0],
@@ -244,7 +182,7 @@ contract Battleship is Ownable {
     emit SetupShip(roundId, msg.sender, shipId);
   }
 
-  function setupShips(uint64 roundId, ShipSetupInfo[] memory info) public
+  function setupShips(uint32 roundId, ShipSetupInfo[] memory info) public
     validRoundId(roundId)
     allowedState(roundId, GameState.P2Joined)
     onlyPlayers(roundId)
@@ -260,7 +198,7 @@ contract Battleship is Ownable {
     }
   }
 
-  function allPlayerShipsReady(uint64 roundId, address player) public view
+  function allPlayerShipsReady(uint32 roundId, address player) public view
     validRoundId(roundId)
     returns (bool)
   {
@@ -272,7 +210,7 @@ contract Battleship is Ownable {
     return true;
   }
 
-  function startGame(uint64 roundId) public
+  function startGame(uint32 roundId) public
     validRoundId(roundId)
     allowedState(roundId, GameState.P2Joined)
   {
@@ -280,11 +218,11 @@ contract Battleship is Ownable {
     address p1 = round.p1;
     address p2 = round.p2;
 
-    require(round.ships[p1].length == getShipTypeNum(), "player 1 ships are not properly setup");
-    require(round.ships[p2].length == getShipTypeNum(), "player 2 ships are not properly setup");
+    require(round.ships[p1].length == _getShipTypeNum(), "player 1 ships are not properly setup");
+    require(round.ships[p2].length == _getShipTypeNum(), "player 2 ships are not properly setup");
 
     // check that p1ships config and p2ships config are properly configured
-    for(uint s = 0; s < getShipTypeNum(); s++) {
+    for(uint s = 0; s < _getShipTypeNum(); s++) {
       require(round.ships[p1][s].alive, "player 1 ships are not properly setup");
       require(round.ships[p2][s].alive, "player 2 ships are not properly setup");
     }
@@ -294,12 +232,12 @@ contract Battleship is Ownable {
     emit GameStart(roundId);
   }
 
-  function playerMove(uint64 roundId, uint8[2] memory hitRC) public
+  function playerMove(uint32 roundId, uint8[2] memory hitRC) public
     validRoundId(roundId)
     playerToMove(roundId)
   {
     // Logic of adding the move in the corresponding move list
-    require(hitRC[0] < boardSize[0] && hitRC[1] < boardSize[1], "Player move is out of bound");
+    require(hitRC[0] < BOARD_ROWS && hitRC[1] < BOARD_COLS, "Player move is out of bound");
 
     // Add to the player move list
     GameRound storage round = rounds[roundId];
@@ -310,7 +248,7 @@ contract Battleship is Ownable {
     address opponent = msg.sender == round.p1 ? round.p2 : round.p1;
     Ship[] storage opponentShips = round.ships[opponent];
 
-    for (uint8 sIdx = 0; sIdx < getShipTypeNum(); sIdx++) {
+    for (uint8 sIdx = 0; sIdx < _getShipTypeNum(); sIdx++) {
       Ship storage ship = opponentShips[sIdx];
       if (
         ship.topLeft[0] <= hitRC[0] && hitRC[0] <= ship.bottomRight[0] // for row check
@@ -352,7 +290,7 @@ contract Battleship is Ownable {
     emit PlayerMove(roundId, msg.sender, hitRC, round.state);
   }
 
-  function updateGameState(uint64 roundId, GameState state) private
+  function updateGameState(uint32 roundId, GameState state) internal
     validRoundId(roundId)
     nonEndState(roundId)
   {
@@ -368,7 +306,7 @@ contract Battleship is Ownable {
     }
   }
 
-  function isGameEnd(uint64 roundId) private view
+  function isGameEnd(uint32 roundId) internal view
     validRoundId(roundId)
     returns (bool)
   {
@@ -385,7 +323,7 @@ contract Battleship is Ownable {
     Ship[] memory p1ships = round.ships[round.p1];
     Ship[] memory p2ships = round.ships[round.p2];
 
-    for (uint8 s = 0; s < getShipTypeNum(); s++) {
+    for (uint8 s = 0; s < _getShipTypeNum(); s++) {
       if (p1ships[s].alive) {
         bEnd = false;
         break;
@@ -394,7 +332,7 @@ contract Battleship is Ownable {
     if (bEnd) return true;
 
     bEnd = true;
-    for (uint8 s = 0; s < getShipTypeNum(); s++) {
+    for (uint8 s = 0; s < _getShipTypeNum(); s++) {
       if (p2ships[s].alive) {
         bEnd = false;
         break;

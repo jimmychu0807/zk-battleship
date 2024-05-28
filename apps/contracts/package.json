@@ -1,0 +1,53 @@
+{
+  "name": "@jimmychu0807/zk-battleship-contracts",
+  "version": "0.1.0",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox-viem": "^3.0.0",
+    "@nomicfoundation/hardhat-viem": "^2.0.1",
+    "@openzeppelin/contracts": "^5.0.2",
+    "@types/chai": "^4.3.16",
+    "@types/chai-as-promised": "^7.1.8",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "20.12.11",
+    "chai-as-promised": "^7.1.2",
+    "dotenv": "^16.4.5",
+    "hardhat": "^2.22.3",
+    "prettier": "^3.0.3",
+    "prettier-plugin-solidity": "^1.3.1",
+    "rimraf": "^5.0.7",
+    "solhint": "^5.0.1",
+    "solhint-community": "^4.0.0",
+    "solhint-plugin-prettier": "^0.1.0",
+    "viem": "2.x"
+  },
+  "engine": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "clean": "hardhat clean",
+    "compile": "hardhat --typecheck compile",
+    "dev": "pnpm compile && HARDHAT_NETWORK=localhost pnpm contracts-deploy",
+    "contracts-deploy": "hardhat ignition deploy ignition/modules/Battleship.ts --strategy create2",
+    "test": "pnpm compile && HARDHAT_NETWORK=hardhat hardhat --typecheck test",
+    "lint": "solhint 'contracts/**/*.sol'",
+    "fmt": "prettier --write --plugin=prettier-plugin-solidity 'contracts/**/*.sol'",
+    "validate": "pnpm test"
+  },
+  "prettier": {
+    "plugins": ["prettier-plugin-solidity"],
+    "overrides": [
+      {
+        "files": "*.sol",
+        "options": {
+          "parser": "solidity-parse",
+          "printWidth": 100,
+          "tabWidth": 2,
+          "useTabs": false,
+          "singleQuote": false,
+          "bracketSpacing": false
+        }
+      }
+    ]
+  }
+}

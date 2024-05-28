@@ -1,9 +1,9 @@
 # Ignore artifacts:
 
-**/hardhat/artifacts/*
-**/hardhat/cache/*
-**/hardhat/ignition/deployments
-**/hardhat/typechain-types/*
+**/artifacts/*
+**/cache/*
+**/ignition/deployments
+**/typechain-types/*
 *.md
 *.yaml
 

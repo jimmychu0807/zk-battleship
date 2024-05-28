@@ -53,12 +53,32 @@ interface IBattleship {
     P2Won
   }
 
+  // Error declaration
+  error Battleship__CurrentStateNoPlayerCanMove();
+  error Battleship__CurrentStateOnlyPlayerCanMove(address);
+  error Battleship__NotInAllowedState(GameState);
+  error Battleship__NotOneOfGamePlayers();
+  error Battleship__RoundHasEnded();
+  error Battleship__RoundIdOutOfBound();
+  error Battleship__SameAsPlayer1();
+  error Battleship__ShipIdOutOfBound();
+  error Battleship__SetupShipNotTopLeftCoordinate();
+  error Battleship__ShipPlacementOutOfBound();
+  error Battleship__ShipSizeNotMatch();
+  error Battleship__PlayerStillSettingUpShips(address);
+  error Battleship__PlayerMoveOutOfBound();
+
   // Events declaration
   event NewGame(uint32 indexed roundId, address indexed sender);
   event P2Joined(uint32 indexed roundId, address indexed sender);
   event SetupShip(uint32 indexed roundId, address indexed sender, uint8 shipId);
   event GameStart(uint32 indexed roundId);
-  event PlayerMove(uint32 indexed roundId, address indexed sender, uint8[2] hitRC, GameState gameState);
+  event PlayerMove(
+    uint32 indexed roundId,
+    address indexed sender,
+    uint8[2] hitRC,
+    GameState gameState
+  );
   event Hit(uint32 indexed roundId, address indexed opponent);
   event SinkShip(uint32 indexed roundId, address indexed opponent, uint8 shipId);
 

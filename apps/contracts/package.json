@@ -31,6 +31,23 @@
     "contracts-deploy": "hardhat ignition deploy ignition/modules/Battleship.ts --strategy create2",
     "test": "pnpm compile && HARDHAT_NETWORK=hardhat hardhat --typecheck test",
     "lint": "solhint 'contracts/**/*.sol'",
+    "fmt": "prettier --write --plugin=prettier-plugin-solidity 'contracts/**/*.sol'",
     "validate": "pnpm test"
+  },
+  "prettier": {
+    "plugins": ["prettier-plugin-solidity"],
+    "overrides": [
+      {
+        "files": "*.sol",
+        "options": {
+          "parser": "solidity-parse",
+          "printWidth": 100,
+          "tabWidth": 2,
+          "useTabs": false,
+          "singleQuote": false,
+          "bracketSpacing": false
+        }
+      }
+    ]
   }
 }

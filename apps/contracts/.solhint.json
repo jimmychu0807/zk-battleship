@@ -12,9 +12,6 @@
     "max-line-length": ["error", 120],
     "not-rely-on-time": "off",
     "reason-string": ["warn", { "maxLength": 80 }],
-    "prettier/prettier": [
-      "error",
-      { "endOfLine": "auto" }
-    ]
+    "prettier/prettier": ["error", { "endOfLine": "auto" }]
   }
 }

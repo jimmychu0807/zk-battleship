@@ -10,9 +10,8 @@ const expect = chai.expect;
 import hre from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox-viem/network-helpers";
 import { shipTypes } from "../ignition/modules/shipTypes";
+import type { ShipSetupInfo } from "./types";
 import { getAddress } from "viem";
-
-// type BigNumberish = bigint | number;
 
 enum GameState {
   P1Joined = 0,
@@ -27,7 +26,7 @@ const helpers = {
   zeroAddr: "0x0000000000000000000000000000000000000000",
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async setupPlayerShips(battleship: any, account: string, roundId: bigint) {
+  async setupPlayerShips(battleship: any, account: string, roundId: number) {
     const topLeft: [number, number] = [0, 0];
     for (let idx = 0; idx < shipTypes.length; idx++) {
       const size = shipTypes[idx].size;
@@ -112,9 +111,10 @@ describe("Battleship", function () {
       [shipTypes],
       { client: { wallet: p2 } }
     );
+    const roundId = 0;
 
     await battleship.write.newGame({ account: p1Addr });
-    await battleship.write.p2join([0n], { account: p2Addr });
+    await battleship.write.p2join([roundId], { account: p2Addr });
 
     return {
       battleship,
@@ -133,7 +133,7 @@ describe("Battleship", function () {
     ]);
 
     const [p1Addr, p2Addr] = [p1.account.address, p2.account.address];
-    const roundId = 0n;
+    const roundId = 0;
 
     const battleship = await hre.viem.deployContract(
       "Battleship",
@@ -171,10 +171,11 @@ describe("Battleship", function () {
 
       // Call the newGame using p1 account
       await battleship.write.newGame({ account: p1Addr });
+      const roundId = 0;
 
       // prettier-ignore
       const [roundInfo, nextRoundId] = await Promise.all([
-        battleship.read.getRound([0n]),
+        battleship.read.getRound([roundId]),
         battleship.read.nextRoundId(),
       ]);
 
@@ -192,7 +193,7 @@ describe("Battleship", function () {
       const { battleship, p1, p2 } = await loadFixture(deployFixture);
       const [p1Addr, p2Addr] = [p1.addr, p2.addr];
 
-      const roundId = 0n;
+      const roundId = 0;
       await battleship.write.newGame({ account: p1Addr });
       await battleship.write.p2join([roundId], { account: p2Addr });
 
@@ -212,15 +213,18 @@ describe("Battleship", function () {
       const { battleship, p3 } = await loadFixture(p2JoinedFixture);
 
       const { addr: p3Addr } = p3;
-      const roundId = 0n;
+      const roundId = 0;
       const shipId = 0;
-
-      const topLeft: [number, number] = [0, 0];
       const shipSize = shipTypes[shipId].size;
-      const bottomRight: [number, number] = [shipSize[0] - 1, shipSize[1] - 1];
+
+      const shipInfo: ShipSetupInfo = {
+        shipId,
+        topLeft: [0, 0],
+        bottomRight: [shipSize[0] - 1, shipSize[1] - 1],
+      };
 
       await expect(
-        battleship.write.setupShip([roundId, shipId, topLeft, bottomRight], {
+        battleship.write.setupShips([roundId, [shipInfo]], {
           account: p3Addr,
         })
       ).be.rejectedWith(/Not one of the game players/);
@@ -231,7 +235,7 @@ describe("Battleship", function () {
       const { addr: p1Addr } = p1;
 
       // shipId out of bound
-      const roundId = 0n;
+      const roundId = 0;
       const shipId = 0;
       const [totalShips, shipTypes, boardSize] = await Promise.all([
         battleship.read.getShipTypeNum(),
@@ -239,19 +243,19 @@ describe("Battleship", function () {
         battleship.read.getBoardSize(),
       ]);
 
-      const [boardRows, boardCols] = [
-        Number(boardSize[0]),
-        Number(boardSize[1]),
-      ];
-      const topLeft: [number, number] = [0, 0];
-      const bottomRight: [number, number] = [
-        Number(shipTypes[shipId].size[0]) - 1,
-        Number(shipTypes[shipId].size[1]) - 1,
-      ];
+      const [boardRows, boardCols] = [boardSize[0], boardSize[1]];
 
+      let shipSetupInfo: ShipSetupInfo = {
+        shipId,
+        topLeft: [0, 0],
+        bottomRight: [
+          shipTypes[shipId].size[0] - 1,
+          shipTypes[shipId].size[1] - 1,
+        ],
+      };
       await expect(
-        battleship.write.setupShip(
-          [roundId, totalShips, topLeft, bottomRight],
+        battleship.write.setupShips(
+          [roundId, [{ ...shipSetupInfo, shipId: totalShips }]],
           {
             account: p1Addr,
           }
@@ -260,37 +264,57 @@ describe("Battleship", function () {
 
       // topLeft and bottomRight coordinate switched
       await expect(
-        battleship.write.setupShip([roundId, shipId, bottomRight, topLeft], {
-          account: p1Addr,
-        })
+        battleship.write.setupShips(
+          [
+            roundId,
+            [
+              {
+                ...shipSetupInfo,
+                topLeft: shipSetupInfo.bottomRight,
+                bottomRight: shipSetupInfo.topLeft,
+              },
+            ],
+          ],
+          {
+            account: p1Addr,
+          }
+        )
       ).rejectedWith(/topLeft .* is greater than bottomRight .*/);
 
       // ship placement is out of bound
-      const oobTopLeft: [number, number] = [boardRows - 1, boardCols - 1];
-      const oobBottomRight: [number, number] = [
-        boardRows - 1 + bottomRight[0],
-        boardCols - 1 + bottomRight[1],
-      ];
-
+      shipSetupInfo = {
+        shipId,
+        topLeft: [boardRows - 1, boardCols - 1],
+        bottomRight: [
+          boardRows - 1 + shipTypes[shipId].size[0],
+          boardCols - 1 + shipTypes[shipId].size[1],
+        ],
+      };
       await expect(
-        battleship.write.setupShip(
-          [roundId, shipId, oobTopLeft, oobBottomRight],
-          { account: p1Addr }
-        )
+        battleship.write.setupShips([roundId, [shipSetupInfo]], {
+          account: p1Addr,
+        })
       ).rejectedWith(/ship is placed out of bound/);
 
+      shipSetupInfo = {
+        shipId,
+        topLeft: [0, 0],
+        bottomRight: [
+          Number(shipTypes[shipId].size[0]) - 1,
+          Number(shipTypes[shipId].size[1]),
+        ],
+      };
       await expect(
-        battleship.write.setupShip(
-          [roundId, shipId, topLeft, [bottomRight[0], bottomRight[1] + 1]],
-          { account: p1Addr }
-        )
+        battleship.write.setupShips([roundId, [shipSetupInfo]], {
+          account: p1Addr,
+        })
       ).rejectedWith(/ship submitted size doesn't match its expected size/);
     });
 
     it("should allow setting up ships with valid parameters", async () => {
       const { battleship, p2 } = await loadFixture(p2JoinedFixture);
       const shipId = 1;
-      const roundId = 0n;
+      const roundId = 0;
       const { addr: p2Addr } = p2;
 
       const [shipRows, shipCols] = [
@@ -298,11 +322,14 @@ describe("Battleship", function () {
         shipTypes[shipId].size[1],
       ];
 
-      const topLeft: [number, number] = [0, 0];
-      const bottomRight: [number, number] = [shipRows - 1, shipCols - 1];
+      const shipSetupInfo: ShipSetupInfo = {
+        shipId,
+        topLeft: [0, 0],
+        bottomRight: [shipRows - 1, shipCols - 1],
+      };
       // prettier-ignore
-      const hash = await battleship.write.setupShip(
-        [roundId, shipId, topLeft, bottomRight],
+      const hash = await battleship.write.setupShips(
+        [roundId, [shipSetupInfo]],
         { account: p2Addr }
       );
 
@@ -316,7 +343,7 @@ describe("Battleship", function () {
     it("should not allow game to start without both players complete setting up ships", async () => {
       const { battleship, p2 } = await loadFixture(p2JoinedFixture);
       const { addr: p2Addr } = p2;
-      const roundId = 0n;
+      const roundId = 0;
 
       await expect(
         battleship.write.startGame([roundId], { account: p2Addr })
@@ -326,7 +353,7 @@ describe("Battleship", function () {
     it("should allow game to start with both players complete setting up ships", async () => {
       const { battleship, p1, p2 } = await loadFixture(p2JoinedFixture);
       const [p1Addr, p2Addr] = [p1.addr, p2.addr];
-      const roundId = 0n;
+      const roundId = 0;
 
       await helpers.setupPlayerShips(battleship, p1Addr, roundId);
       await helpers.setupPlayerShips(battleship, p2Addr, roundId);
@@ -347,7 +374,7 @@ describe("Battleship", function () {
   describe("Player moves", () => {
     it("should reject moves that are out of bound", async () => {
       const { battleship, p1 } = await loadFixture(gameStartFixture);
-      const roundId = 0n;
+      const roundId = 0;
       const { addr: account } = p1;
 
       const [boardRow, boardCol] = await battleship.read.getBoardSize();
@@ -361,7 +388,7 @@ describe("Battleship", function () {
 
     it("should accept move that miss", async () => {
       const { battleship, p1 } = await loadFixture(gameStartFixture);
-      const roundId = 0n;
+      const roundId = 0;
       const { addr: account } = p1;
 
       const [boardRow, boardCol] = await battleship.read.getBoardSize();
@@ -387,7 +414,7 @@ describe("Battleship", function () {
 
     it("should accept move that hit", async () => {
       const { battleship, p1, p2 } = await loadFixture(gameStartFixture);
-      const roundId = 0n;
+      const roundId = 0;
       const { addr: account } = p1;
       const p2Addr = p2.addr;
 

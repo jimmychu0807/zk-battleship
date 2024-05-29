@@ -1,0 +1,12 @@
+# Ignore artifacts:
+
+**/artifacts/*
+**/cache/*
+**/ignition/deployments
+**/typechain-types/*
+*.md
+*.yaml
+
+build
+coverage
+pnpm-lock.yaml

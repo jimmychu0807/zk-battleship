@@ -69,7 +69,7 @@ contract Battleship is IBattleship, Ownable {
     return shipTypes;
   }
 
-  function _getShipTypeNum() internal view returns (uint16) {
+  function getShipTypeNum() public view returns (uint16) {
     return uint16(shipTypes.length);
   }
 
@@ -163,7 +163,7 @@ contract Battleship is IBattleship, Ownable {
     onlyPlayers(roundId)
     returns (bool)
   {
-    if (shipId >= _getShipTypeNum()) {
+    if (shipId >= getShipTypeNum()) {
       revert Battleship__ShipIdOutOfBound();
     }
     // validate the ship topLeft and bottomRight coordinates are correct
@@ -190,7 +190,7 @@ contract Battleship is IBattleship, Ownable {
 
     if (playerShips.length == 0) {
       // create empty ships for the player
-      for (uint8 i = 0; i < _getShipTypeNum(); i++) {
+      for (uint8 i = 0; i < getShipTypeNum(); i++) {
         playerShips.push(Ship({body: 0, topLeft: [0, 0], bottomRight: [0, 0], alive: false}));
       }
     }
@@ -232,15 +232,15 @@ contract Battleship is IBattleship, Ownable {
     address p1 = round.p1;
     address p2 = round.p2;
 
-    if (round.ships[p1].length < _getShipTypeNum()) {
+    if (round.ships[p1].length < getShipTypeNum()) {
       revert Battleship__PlayerStillSettingUpShips(p1);
     }
-    if (round.ships[p2].length < _getShipTypeNum()) {
+    if (round.ships[p2].length < getShipTypeNum()) {
       revert Battleship__PlayerStillSettingUpShips(p2);
     }
 
     // check that p1ships config and p2ships config are properly configured
-    for (uint16 s = 0; s < _getShipTypeNum(); s++) {
+    for (uint16 s = 0; s < getShipTypeNum(); s++) {
       if (!round.ships[p1][s].alive) {
         revert Battleship__PlayerStillSettingUpShips(p1);
       }
@@ -275,7 +275,7 @@ contract Battleship is IBattleship, Ownable {
     address opponent = msg.sender == round.p1 ? round.p2 : round.p1;
     Ship[] storage opponentShips = round.ships[opponent];
 
-    for (uint8 sIdx = 0; sIdx < _getShipTypeNum(); sIdx++) {
+    for (uint8 sIdx = 0; sIdx < getShipTypeNum(); sIdx++) {
       Ship storage ship = opponentShips[sIdx];
       if (
         ship.topLeft[0] <= hitRC[0] &&
@@ -349,7 +349,7 @@ contract Battleship is IBattleship, Ownable {
     Ship[] memory p1ships = round.ships[round.p1];
     Ship[] memory p2ships = round.ships[round.p2];
 
-    for (uint8 s = 0; s < _getShipTypeNum(); s++) {
+    for (uint8 s = 0; s < getShipTypeNum(); s++) {
       if (p1ships[s].alive) {
         bEnd = false;
         break;
@@ -358,7 +358,7 @@ contract Battleship is IBattleship, Ownable {
     if (bEnd) return true;
 
     bEnd = true;
-    for (uint8 s = 0; s < _getShipTypeNum(); s++) {
+    for (uint8 s = 0; s < getShipTypeNum(); s++) {
       if (p2ships[s].alive) {
         bEnd = false;
         break;

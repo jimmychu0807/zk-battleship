@@ -7,7 +7,7 @@ requiredEnvs.forEach((envName) => {
   if (!process.env[envName] || (process.env[envName] as string).length === 0) {
     throw new Error(`${envName} is not set in .env`);
   }
-})
+});
 
 const config: HardhatUserConfig = {
   defaultNetwork: process.env.DEFAULT_NETWORK || "hardhat",

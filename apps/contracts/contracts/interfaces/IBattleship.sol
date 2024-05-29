@@ -83,6 +83,7 @@ interface IBattleship {
   event SinkShip(uint32 indexed roundId, address indexed opponent, uint8 shipId);
 
   function getShipTypes() external view returns (ShipType[] memory);
+  function getShipTypeNum() external view returns (uint16);
   function getBoardSize() external pure returns (uint8[2] memory);
   function getAllRounds() external view returns (GameRoundView[] memory);
   function getRound(uint32 roundId) external view returns (GameRoundView memory);

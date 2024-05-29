@@ -1,7 +1,4 @@
-export interface ShipType {
-  name: string;
-  size: number[];
-}
+import type { ShipType } from "../../test/types";
 
 // prettier-ignore
 export const shipTypes: ShipType[] = [

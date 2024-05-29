@@ -108,12 +108,10 @@ contract Battleship is IBattleship, Ownable {
     return rounds[roundId].ships[p];
   }
 
-  // --- End of viewer functions declaration
-
-  function newGame() public {
+  function newGame() external override returns (uint32 currentId) {
     GameRound storage round = rounds.push();
     round.p1 = msg.sender;
-    uint32 currentId = nextRoundId++;
+    currentId = nextRoundId++;
     _updateGameState(currentId, GameState.P1Joined);
 
     emit NewGame(currentId, msg.sender);
@@ -121,7 +119,7 @@ contract Battleship is IBattleship, Ownable {
 
   function p2join(
     uint32 roundId
-  ) public validRoundId(roundId) allowedState(roundId, GameState.P1Joined) {
+  ) external override validRoundId(roundId) allowedState(roundId, GameState.P1Joined) {
     GameRound storage round = rounds[roundId];
     if (round.p1 == msg.sender) {
       revert Battleship__SameAsPlayer1();
@@ -132,12 +130,39 @@ contract Battleship is IBattleship, Ownable {
     emit P2Joined(roundId, msg.sender);
   }
 
-  function setupShip(
+  function setupShips(
+    uint32 roundId,
+    ShipSetupInfo[] calldata info
+  )
+    external
+    override
+    validRoundId(roundId)
+    allowedState(roundId, GameState.P2Joined)
+    onlyPlayers(roundId)
+  {
+    for (uint8 i = 0; i < info.length; i++) {
+      _setupShip(roundId, info[i].shipId, info[i].topLeft, info[i].bottomRight);
+    }
+
+    // start game if both side have completed ship setup
+    GameRound storage round = rounds[roundId];
+    if (allPlayerShipsReady(roundId, round.p1) && allPlayerShipsReady(roundId, round.p2)) {
+      startGame(roundId);
+    }
+  }
+
+  function _setupShip(
     uint32 roundId,
     uint8 shipId,
-    uint8[2] memory topLeft,
-    uint8[2] memory bottomRight
-  ) public validRoundId(roundId) allowedState(roundId, GameState.P2Joined) onlyPlayers(roundId) {
+    uint8[2] calldata topLeft,
+    uint8[2] calldata bottomRight
+  )
+    internal
+    validRoundId(roundId)
+    allowedState(roundId, GameState.P2Joined)
+    onlyPlayers(roundId)
+    returns (bool)
+  {
     if (shipId >= _getShipTypeNum()) {
       revert Battleship__ShipIdOutOfBound();
     }
@@ -179,27 +204,13 @@ contract Battleship is IBattleship, Ownable {
     playerShips[shipId].alive = true;
 
     emit SetupShip(roundId, msg.sender, shipId);
-  }
-
-  function setupShips(
-    uint32 roundId,
-    ShipSetupInfo[] memory info
-  ) public validRoundId(roundId) allowedState(roundId, GameState.P2Joined) onlyPlayers(roundId) {
-    for (uint8 i = 0; i < info.length; i++) {
-      setupShip(roundId, info[i].shipId, info[i].topLeft, info[i].bottomRight);
-    }
-
-    // start game if both side have completed ship setup
-    GameRound storage round = rounds[roundId];
-    if (allPlayerShipsReady(roundId, round.p1) && allPlayerShipsReady(roundId, round.p2)) {
-      startGame(roundId);
-    }
+    return true;
   }
 
   function allPlayerShipsReady(
     uint32 roundId,
     address player
-  ) public view validRoundId(roundId) returns (bool) {
+  ) public view override validRoundId(roundId) returns (bool) {
     Ship[] storage playerShips = rounds[roundId].ships[player];
     if (playerShips.length < shipTypes.length) return false;
     for (uint8 i = 0; i < playerShips.length; i++) {
@@ -210,7 +221,13 @@ contract Battleship is IBattleship, Ownable {
 
   function startGame(
     uint32 roundId
-  ) public validRoundId(roundId) allowedState(roundId, GameState.P2Joined) {
+  )
+    public
+    override
+    validRoundId(roundId)
+    allowedState(roundId, GameState.P2Joined)
+    returns (GameState)
+  {
     GameRound storage round = rounds[roundId];
     address p1 = round.p1;
     address p2 = round.p2;
@@ -235,14 +252,15 @@ contract Battleship is IBattleship, Ownable {
     _updateGameState(roundId, GameState.P1Move);
 
     emit GameStart(roundId);
+    return (round.state);
   }
 
   // TODO: fix later
   // solhint-disable-next-line code-complexity
   function playerMove(
     uint32 roundId,
-    uint8[2] memory hitRC
-  ) public validRoundId(roundId) playerToMove(roundId) {
+    uint8[2] calldata hitRC
+  ) external override validRoundId(roundId) playerToMove(roundId) returns (GameState) {
     // Logic of adding the move in the corresponding move list
     if (hitRC[0] >= BOARD_ROWS || hitRC[1] >= BOARD_COLS) {
       revert Battleship__PlayerMoveOutOfBound();
@@ -283,7 +301,7 @@ contract Battleship is IBattleship, Ownable {
     }
 
     // Update the game state
-    if (isGameEnd(roundId)) {
+    if (_isGameEnd(roundId)) {
       if (round.state == GameState.P1Move) {
         _updateGameState(roundId, GameState.P1Won);
       } else {
@@ -298,6 +316,7 @@ contract Battleship is IBattleship, Ownable {
     }
 
     emit PlayerMove(roundId, msg.sender, hitRC, round.state);
+    return (round.state);
   }
 
   function _updateGameState(
@@ -318,7 +337,7 @@ contract Battleship is IBattleship, Ownable {
 
   // TODO: fix later
   // solhint-disable-next-line code-complexity
-  function isGameEnd(uint32 roundId) internal view validRoundId(roundId) returns (bool) {
+  function _isGameEnd(uint32 roundId) internal view validRoundId(roundId) returns (bool) {
     // check if the game ends
     GameRound storage round = rounds[roundId];
 

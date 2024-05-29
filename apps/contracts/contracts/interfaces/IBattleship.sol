@@ -88,4 +88,10 @@ interface IBattleship {
   function getRound(uint32 roundId) external view returns (GameRoundView memory);
   function getRoundMoves(uint32 roundId, address p) external view returns (uint8[2][] memory);
   function getRoundShips(uint32 roundId, address p) external view returns (Ship[] memory);
+  function newGame() external returns (uint32);
+  function p2join(uint32 roundId) external;
+  function setupShips(uint32 roundId, ShipSetupInfo[] calldata info) external;
+  function allPlayerShipsReady(uint32 roundId, address player) external view returns (bool);
+  function startGame(uint32 roundId) external returns (GameState);
+  function playerMove(uint32 roundId, uint8[2] calldata hitRC) external returns (GameState);
 }
